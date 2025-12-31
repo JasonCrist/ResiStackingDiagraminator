@@ -703,6 +703,16 @@
             align-items: center;
         }
 
+        .add-type-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-right: 0.5rem;
+        }
+
+        .add-type-label strong {
+            color: var(--text-primary);
+        }
+
         .floor-inline-actions button {
             padding: 0.25rem 0.5rem;
             font-size: 0.7rem;
@@ -1192,6 +1202,14 @@
             return String(num);
         }
 
+        // Format P-level with leading zero
+        function formatPLevel(num) {
+            if (num < 10 && num > 0) {
+                return 'P0' + num;
+            }
+            return 'P' + num;
+        }
+
         function generateFloorRange(start, end, skip13 = false) {
             const startNum = parseFloorLabel(start);
             const endNum = parseFloorLabel(end);
@@ -1213,7 +1231,7 @@
                 const endP = parseInt(String(end).match(/\d+/)?.[0]) || 2;
                 for (let i = startP; i <= endP; i++) {
                     if (skip13 && i === 13) continue;
-                    floors.push(`P${i}`);
+                    floors.push(formatPLevel(i));
                 }
             }
             // Mixed range (below grade to above grade)
@@ -1274,12 +1292,9 @@
                 
                 const card = document.createElement('div');
                 card.className = `floor-type-card ${ft.expanded ? 'expanded' : ''}`;
-                card.draggable = true;
                 card.dataset.index = index;
                 
-                // Drag events
-                card.addEventListener('dragstart', handleDragStart);
-                card.addEventListener('dragend', handleDragEnd);
+                // Drop target events on the card
                 card.addEventListener('dragover', handleDragOver);
                 card.addEventListener('drop', handleDrop);
                 card.addEventListener('dragleave', handleDragLeave);
@@ -1287,7 +1302,7 @@
                 card.innerHTML = `
                     <div class="floor-type-header" onclick="toggleFloorType(${index})">
                         <div class="floor-type-info">
-                            <div class="drag-handle" onclick="event.stopPropagation()" title="Drag to reorder">
+                            <div class="drag-handle" draggable="true" data-index="${index}" title="Drag to reorder">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
                                     <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
@@ -1299,6 +1314,7 @@
                             <span class="floor-type-range">${ft.startFloor} → ${ft.endFloor} (${floorCount} floor${floorCount !== 1 ? 's' : ''})</span>
                         </div>
                         <div class="floor-inline-actions" onclick="event.stopPropagation()">
+                            <span class="add-type-label">Add <strong>TYPE</strong></span>
                             <button class="add-btn" onclick="addFloorTypeAt(${index}, 'above')" title="Add floor type above">+ Above</button>
                             <button class="add-btn" onclick="addFloorTypeAt(${index}, 'below')" title="Add floor type below">+ Below</button>
                             <button class="delete-btn" onclick="deleteFloorType(${index})" title="Delete">✕</button>
@@ -1376,6 +1392,23 @@
                         </div>
                     </div>
                 `;
+                
+                // Add drag events to the drag handle
+                const dragHandle = card.querySelector('.drag-handle');
+                dragHandle.addEventListener('dragstart', function(e) {
+                    e.stopPropagation();
+                    draggedItem = card;
+                    card.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', this.dataset.index);
+                });
+                dragHandle.addEventListener('dragend', function(e) {
+                    card.classList.remove('dragging');
+                    document.querySelectorAll('.floor-type-card').forEach(c => {
+                        c.classList.remove('drag-over');
+                    });
+                });
+                
                 container.appendChild(card);
             });
         }
@@ -1419,7 +1452,7 @@
                     newEndP = delta > 0 ? 14 : 12;
                 }
                 
-                ft.endFloor = `P${newEndP}`;
+                ft.endFloor = formatPLevel(newEndP);
             } else {
                 // Regular numbered floors
                 const endFloorNum = parseInt(ft.endFloor.match(/\d+/)?.[0]) || 2;
@@ -1446,20 +1479,6 @@
         // Drag and Drop handlers
         let draggedItem = null;
 
-        function handleDragStart(e) {
-            draggedItem = this;
-            this.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', this.dataset.index);
-        }
-
-        function handleDragEnd(e) {
-            this.classList.remove('dragging');
-            document.querySelectorAll('.floor-type-card').forEach(card => {
-                card.classList.remove('drag-over');
-            });
-        }
-
         function handleDragOver(e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
@@ -1477,7 +1496,7 @@
             const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
             const toIndex = parseInt(this.dataset.index);
             
-            if (fromIndex !== toIndex) {
+            if (fromIndex !== toIndex && !isNaN(fromIndex) && !isNaN(toIndex)) {
                 // Swap the floor types
                 const temp = state.floorTypes[fromIndex];
                 state.floorTypes[fromIndex] = state.floorTypes[toIndex];
@@ -1491,25 +1510,25 @@
             }
         }
 
-        // Add floor type at specific position
+        // Add floor type at specific position (copies from reference floor type)
         function addFloorTypeAt(index, position) {
             const referenceType = state.floorTypes[index];
-            const refStart = parseFloorLabel(referenceType.startFloor);
             
+            // Create a copy of the reference floor type
             let newType = {
-                name: 'New Floor Type',
-                use: 'Residential',
-                startFloor: '02',
-                endFloor: '02',
-                gsf: 22000,
-                height: "10' 8\"",
-                countsInGSF: true,
-                parkingSF: null,
-                actualCars: null,
+                name: referenceType.name + ' (Copy)',
+                use: referenceType.use,
+                startFloor: referenceType.startFloor,
+                endFloor: referenceType.startFloor, // Start with single floor
+                gsf: referenceType.gsf,
+                height: referenceType.height,
+                countsInGSF: referenceType.countsInGSF,
+                parkingSF: referenceType.parkingSF,
+                actualCars: referenceType.actualCars,
                 expanded: true,
-                isPLevel: false,
-                secondaryUse: null,
-                secondarySF: 0
+                isPLevel: referenceType.isPLevel,
+                secondaryUse: referenceType.secondaryUse,
+                secondarySF: referenceType.secondarySF
             };
             
             // Insert at the correct position
@@ -1567,8 +1586,8 @@
                 
                 // P-levels keep their P prefix but use sequential numbers
                 if (isPLevel) {
-                    ft.startFloor = `P${newStart}`;
-                    ft.endFloor = `P${newEnd}`;
+                    ft.startFloor = formatPLevel(newStart);
+                    ft.endFloor = formatPLevel(newEnd);
                     ft.isPLevel = true;
                 } else {
                     ft.startFloor = formatFloorNumber(newStart);
@@ -1914,8 +1933,8 @@
             return [
                 { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B1', endFloor: 'B1', gsf: 45000, height: "10' 0\"", countsInGSF: false, expanded: false, secondaryUse: null, secondarySF: 0 },
                 { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 38000, height: "18' 0\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
-                { name: 'P2 - Van Accessible', use: 'Parking', startFloor: 'P2', endFloor: 'P2', gsf: 40000, height: "11' 0\"", countsInGSF: false, expanded: false, isPLevel: true, secondaryUse: null, secondarySF: 0 },
-                { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P3', endFloor: 'P3', gsf: 40000, height: "9' 8\"", countsInGSF: false, expanded: false, isPLevel: true, secondaryUse: null, secondarySF: 0 },
+                { name: 'P02 - Van Accessible', use: 'Parking', startFloor: 'P02', endFloor: 'P02', gsf: 40000, height: "11' 0\"", countsInGSF: false, expanded: false, isPLevel: true, secondaryUse: null, secondarySF: 0 },
+                { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P03', endFloor: 'P03', gsf: 40000, height: "9' 8\"", countsInGSF: false, expanded: false, isPLevel: true, secondaryUse: null, secondarySF: 0 },
                 { name: 'Amenity Level', use: 'Amenity', startFloor: '04', endFloor: '04', gsf: 22000, height: "12' 0\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
                 { name: 'Tower - Lower Typical', use: 'Residential', startFloor: '05', endFloor: '05', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
                 { name: 'Tower - Middle Typical', use: 'Residential', startFloor: '06', endFloor: '06', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
