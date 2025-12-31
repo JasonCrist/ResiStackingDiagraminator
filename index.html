@@ -771,6 +771,71 @@
             background: var(--bg-primary);
             border-radius: 4px;
         }
+
+        /* Info tooltip */
+        .info-tooltip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.625rem;
+            font-weight: 700;
+            cursor: help;
+            margin-left: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .info-tooltip:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .info-tooltip .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 280px;
+            background: var(--bg-accent);
+            color: var(--text-light);
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 400;
+            line-height: 1.5;
+            text-align: left;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .info-tooltip .tooltip-text::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: var(--bg-accent) transparent transparent transparent;
+        }
+
+        .info-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .checkbox-with-info {
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -822,10 +887,18 @@
                     <div class="range-value" id="efficiencyGoalValue">80%</div>
                 </div>
                 <div class="form-group">
-                    <label class="checkbox-group">
-                        <input type="checkbox" id="skip13" onchange="updatePreview()">
-                        <span>Skip Floor 13</span>
-                    </label>
+                    <div class="checkbox-with-info">
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="skip13" checked onchange="updatePreview()">
+                            <span>Skip Floor 13</span>
+                        </label>
+                        <div class="info-tooltip">
+                            i
+                            <div class="tooltip-text">
+                                <strong>Triskaidekaphobia</strong> is the fear of the number 13. Many residential buildings skip the 13th floor in their numbering (going directly from 12 to 14) to avoid superstitious concerns from potential residents and to improve marketability. This practice is common in high-rise residential towers.
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1024,7 +1097,7 @@
             projectNumber: '00000.000',
             efficiency: 0.85,
             efficiencyGoal: 0.80,
-            skip13: false,
+            skip13: true,
             sfPerCar: 410,
             parkingMethod: 'beds',
             parkingRatio: 0.9,
@@ -1694,7 +1767,7 @@
                 projectNumber: '00000.000',
                 efficiency: 0.85,
                 efficiencyGoal: 0.80,
-                skip13: false,
+                skip13: true,
                 sfPerCar: 410,
                 parkingMethod: 'beds',
                 parkingRatio: 0.9,
@@ -1731,15 +1804,16 @@
 
         function getDefaultFloorTypes() {
             return [
-                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B1', endFloor: 'B3', gsf: 45000, height: "10' 0\"", countsInGSF: false, expanded: false },
+                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B1', endFloor: 'B1', gsf: 45000, height: "10' 0\"", countsInGSF: false, expanded: false },
                 { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 38000, height: "18' 0\"", countsInGSF: true, expanded: false },
                 { name: 'P2 - Van Accessible', use: 'Parking', startFloor: 'P2', endFloor: 'P2', gsf: 40000, height: "11' 0\"", countsInGSF: false, expanded: false },
-                { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P3', endFloor: 'P4', gsf: 40000, height: "9' 8\"", countsInGSF: false, expanded: false },
+                { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P3', endFloor: 'P3', gsf: 40000, height: "9' 8\"", countsInGSF: false, expanded: false },
                 { name: 'Amenity Level', use: 'Amenity', startFloor: '05', endFloor: '05', gsf: 22000, height: "12' 0\"", countsInGSF: true, expanded: false },
-                { name: 'Tower - Lower Typical', use: 'Residential', startFloor: '06', endFloor: '12', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false },
-                { name: 'Tower - Upper Typical', use: 'Residential', startFloor: '14', endFloor: '20', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false },
-                { name: 'Penthouse', use: 'Residential', startFloor: '21', endFloor: '22', gsf: 18000, height: "11' 8\"", countsInGSF: true, expanded: false },
-                { name: 'Roof - Mechanical', use: 'Mechanical', startFloor: '23', endFloor: '23', gsf: 5000, height: "15' 0\"", countsInGSF: false, expanded: false }
+                { name: 'Tower - Lower Typical', use: 'Residential', startFloor: '06', endFloor: '06', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false },
+                { name: 'Tower - Middle Typical', use: 'Residential', startFloor: '07', endFloor: '07', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false },
+                { name: 'Tower - Upper Typical', use: 'Residential', startFloor: '08', endFloor: '08', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false },
+                { name: 'Penthouse', use: 'Residential', startFloor: '09', endFloor: '09', gsf: 18000, height: "11' 8\"", countsInGSF: true, expanded: false },
+                { name: 'Roof - Mechanical', use: 'Mechanical', startFloor: '10', endFloor: '10', gsf: 5000, height: "15' 0\"", countsInGSF: false, expanded: false }
             ];
         }
 
@@ -2024,6 +2098,7 @@
 
         function init() {
             state.floorTypes = getDefaultFloorTypes();
+            autoRenumberFloors();
             renderFloorTypes();
             updatePreview();
         }
