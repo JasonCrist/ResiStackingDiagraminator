@@ -1627,26 +1627,23 @@
             
             if (fromDisplayIndex !== toDisplayIndex && !isNaN(fromDisplayIndex) && !isNaN(toDisplayIndex)) {
                 // Get the current display order (sorted by floor level, roof to basement)
-                const sortedIndices = state.floorTypes.map((ft, idx) => ({
-                    idx,
-                    sortOrder: parseFloorLabel(ft.startFloor)
-                })).sort((a, b) => b.sortOrder - a.sortOrder);
+                // This gives us an array where index 0 = top of building (highest floor)
+                const sortedTypes = state.floorTypes
+                    .map((ft, idx) => ({ ft, idx, sortOrder: parseFloorLabel(ft.startFloor) }))
+                    .sort((a, b) => b.sortOrder - a.sortOrder);
                 
-                // Map display indices to array indices
-                const fromArrayIndex = sortedIndices[fromDisplayIndex].idx;
-                const toArrayIndex = sortedIndices[toDisplayIndex].idx;
+                // Create new array in the desired order
+                const displayOrder = sortedTypes.map(item => item.ft);
                 
-                // Remove from original position
-                const [movedItem] = state.floorTypes.splice(fromArrayIndex, 1);
+                // Remove from old display position and insert at new display position
+                const [movedItem] = displayOrder.splice(fromDisplayIndex, 1);
+                displayOrder.splice(toDisplayIndex, 0, movedItem);
                 
-                // Recalculate target index (it may have shifted after removal)
-                const adjustedToIndex = fromArrayIndex < toArrayIndex ? toArrayIndex - 1 : toArrayIndex;
+                // Reverse to get array order (basement first, roof last)
+                state.floorTypes = displayOrder.reverse();
                 
-                // Insert at new position
-                state.floorTypes.splice(adjustedToIndex, 0, movedItem);
-                
-                // Re-renumber all floors after the move
-                autoRenumberFloors();
+                // Renumber based on new array order
+                renumberFloorsInPlace();
                 renderFloorTypes();
                 updatePreview();
                 showToast('Floor type moved!', 'success');
@@ -1687,27 +1684,41 @@
             updatePreview();
         }
 
-        // Auto-renumber all floors based on order
+        // Auto-renumber all floors based on order (sorts array first)
         function autoRenumberFloors() {
             // Sort by current start floor to maintain relative order
             state.floorTypes.sort((a, b) => {
                 return parseFloorLabel(a.startFloor) - parseFloorLabel(b.startFloor);
             });
             
+            // Then renumber in place
+            renumberFloorsInPlace();
+        }
+        
+        // Renumber floors based on current array order (does NOT sort)
+        function renumberFloorsInPlace() {
             let currentFloor = 2; // Start after ground (floor 1)
+            let currentBasement = 1; // Start B01
             
+            // Process in array order (which should be basement-to-roof after drag)
             state.floorTypes.forEach((ft) => {
                 const isBelowGrade = ft.startFloor.toUpperCase().startsWith('B');
                 const isPLevel = ft.isPLevel || ft.startFloor.toUpperCase().startsWith('P');
                 const isGround = ['G', 'GROUND', 'GF'].includes(ft.startFloor.toUpperCase());
                 
-                // Skip basement - they have their own numbering
+                // Handle basement floors
                 if (isBelowGrade) {
+                    const floorCount = countFloorsInRange(ft.startFloor, ft.endFloor);
+                    ft.startFloor = formatBLevel(currentBasement);
+                    ft.endFloor = formatBLevel(currentBasement + floorCount - 1);
+                    currentBasement = currentBasement + floorCount;
                     return;
                 }
                 
-                // Ground floor is always floor 1
+                // Ground floor is always G
                 if (isGround) {
+                    ft.startFloor = 'G';
+                    ft.endFloor = 'G';
                     return;
                 }
                 
