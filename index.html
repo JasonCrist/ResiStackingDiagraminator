@@ -846,6 +846,37 @@
             display: flex;
             align-items: center;
         }
+
+        /* SF input with inline GSF checkbox */
+        .sf-input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sf-input-group input[type="number"] {
+            flex: 1;
+        }
+
+        .checkbox-inline {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .checkbox-inline input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            margin: 0;
+        }
+
+        .checkbox-inline span {
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -1127,7 +1158,6 @@
         };
 
         const USE_TYPES = ['Residential', 'Parking', 'Retail', 'Amenity', 'Mechanical', 'Office'];
-        const SECONDARY_USE_TYPES = ['None', 'Residential', 'Parking', 'Retail', 'Amenity', 'Mechanical', 'Office'];
 
         // ============================================
         // HELPER FUNCTIONS
@@ -1324,7 +1354,7 @@
                         <div class="floor-type-grid">
                             <div class="form-group">
                                 <label>Primary Use</label>
-                                <select onchange="updateFloorTypeField(${index}, 'use', this.value)">
+                                <select onchange="updateFloorTypeUse(${index}, this.value)">
                                     ${USE_TYPES.map(u => `<option value="${u}" ${ft.use === u ? 'selected' : ''}>${u}</option>`).join('')}
                                 </select>
                             </div>
@@ -1346,49 +1376,51 @@
                             </div>
                             <div class="form-group">
                                 <label>Primary GSF per Floor</label>
-                                <input type="number" value="${ft.gsf}" onchange="updateFloorTypeField(${index}, 'gsf', parseInt(this.value))">
+                                <div class="sf-input-group">
+                                    <input type="number" value="${ft.gsf}" onchange="updateFloorTypeField(${index}, 'gsf', parseInt(this.value))">
+                                    <label class="checkbox-inline">
+                                        <input type="checkbox" ${ft.countsInGSF ? 'checked' : ''} onchange="updateFloorTypeField(${index}, 'countsInGSF', this.checked)">
+                                        <span>GSF</span>
+                                    </label>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label>Floor Height</label>
                                 <input type="text" value="${ft.height}" onchange="updateFloorTypeField(${index}, 'height', this.value)">
                             </div>
                             
-                            <div class="form-group full-width" style="border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
-                                <label style="font-weight: 600; color: var(--text-secondary);">Mixed Use (Optional)</label>
-                            </div>
-                            <div class="form-group">
-                                <label>Secondary Use</label>
-                                <select onchange="updateFloorTypeField(${index}, 'secondaryUse', this.value === 'None' ? null : this.value)">
-                                    ${SECONDARY_USE_TYPES.map(u => `<option value="${u}" ${(ft.secondaryUse || 'None') === u ? 'selected' : ''}>${u}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Secondary SF per Floor</label>
-                                <input type="number" value="${ft.secondarySF || ''}" placeholder="0" onchange="updateFloorTypeField(${index}, 'secondarySF', parseInt(this.value) || 0)" ${!ft.secondaryUse || ft.secondaryUse === 'None' ? 'disabled' : ''}>
-                            </div>
-                            
                             ${ft.use === 'Parking' ? `
-                            <div class="form-group">
-                                <label>Parking SF (if different from GSF)</label>
-                                <input type="number" value="${ft.parkingSF || ''}" placeholder="Same as GSF" onchange="updateFloorTypeField(${index}, 'parkingSF', parseInt(this.value) || null)">
-                            </div>
                             <div class="form-group">
                                 <label>Actual Cars (optional override)</label>
                                 <input type="number" value="${ft.actualCars || ''}" placeholder="Calculated" onchange="updateFloorTypeField(${index}, 'actualCars', parseInt(this.value) || null)">
                             </div>
                             ` : ''}
-                            <div class="form-group full-width">
+                            
+                            <div class="form-group full-width" style="border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
                                 <label class="checkbox-group">
-                                    <input type="checkbox" ${ft.countsInGSF ? 'checked' : ''} onchange="updateFloorTypeField(${index}, 'countsInGSF', this.checked)">
-                                    <span>Primary Use Counts in Total GSF</span>
+                                    <input type="checkbox" ${ft.hasMixedUse ? 'checked' : ''} onchange="toggleMixedUse(${index}, this.checked)">
+                                    <span style="font-weight: 600;">Mixed Use</span>
                                 </label>
                             </div>
-                            <div class="form-group full-width">
-                                <label class="checkbox-group">
-                                    <input type="checkbox" ${ft.isPLevel ? 'checked' : ''} onchange="updateFloorTypeField(${index}, 'isPLevel', this.checked); autoRenumberFloors(); renderFloorTypes(); updatePreview();">
-                                    <span>Label as P-Level (above grade parking in floor sequence)</span>
-                                </label>
+                            
+                            ${ft.hasMixedUse ? `
+                            <div class="form-group">
+                                <label>Secondary Use</label>
+                                <select onchange="updateSecondaryUse(${index}, this.value)">
+                                    ${USE_TYPES.map(u => `<option value="${u}" ${ft.secondaryUse === u ? 'selected' : ''}>${u}</option>`).join('')}
+                                </select>
                             </div>
+                            <div class="form-group">
+                                <label>Secondary SF per Floor</label>
+                                <div class="sf-input-group">
+                                    <input type="number" value="${ft.secondarySF || ''}" placeholder="0" onchange="updateFloorTypeField(${index}, 'secondarySF', parseInt(this.value) || 0)">
+                                    <label class="checkbox-inline">
+                                        <input type="checkbox" ${ft.secondaryCountsInGSF ? 'checked' : ''} onchange="updateFloorTypeField(${index}, 'secondaryCountsInGSF', this.checked)">
+                                        <span>GSF</span>
+                                    </label>
+                                </div>
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -1497,13 +1529,24 @@
             const toIndex = parseInt(this.dataset.index);
             
             if (fromIndex !== toIndex && !isNaN(fromIndex) && !isNaN(toIndex)) {
-                // Swap the floor types
-                const temp = state.floorTypes[fromIndex];
-                state.floorTypes[fromIndex] = state.floorTypes[toIndex];
-                state.floorTypes[toIndex] = temp;
+                // Get the floor types
+                const fromType = state.floorTypes[fromIndex];
+                const toType = state.floorTypes[toIndex];
                 
-                // Renumber all floors after swap
-                autoRenumberFloors();
+                // Swap the floor ranges (so visual positions actually change)
+                const tempStart = fromType.startFloor;
+                const tempEnd = fromType.endFloor;
+                const tempIsPLevel = fromType.isPLevel;
+                
+                fromType.startFloor = toType.startFloor;
+                fromType.endFloor = toType.endFloor;
+                fromType.isPLevel = toType.isPLevel;
+                
+                toType.startFloor = tempStart;
+                toType.endFloor = tempEnd;
+                toType.isPLevel = tempIsPLevel;
+                
+                // Re-render (don't call autoRenumberFloors - that would undo the swap)
                 renderFloorTypes();
                 updatePreview();
                 showToast('Floor types reordered!', 'success');
@@ -1527,8 +1570,10 @@
                 actualCars: referenceType.actualCars,
                 expanded: true,
                 isPLevel: referenceType.isPLevel,
+                hasMixedUse: referenceType.hasMixedUse,
                 secondaryUse: referenceType.secondaryUse,
-                secondarySF: referenceType.secondarySF
+                secondarySF: referenceType.secondarySF,
+                secondaryCountsInGSF: referenceType.secondaryCountsInGSF
             };
             
             // Insert at the correct position
@@ -1633,40 +1678,39 @@
                 
                 // Calculate secondary RSF if secondary use is Residential
                 let secondaryRSF = 0;
-                if (floor.secondaryUse === 'Residential' && floor.secondarySF > 0) {
+                if (floor.hasMixedUse && floor.secondaryUse === 'Residential' && floor.secondarySF > 0) {
                     secondaryRSF = Math.round(floor.secondarySF * efficiency);
                 }
                 
                 const totalRSFForFloor = primaryRSF + secondaryRSF;
                 
-                // Parking calculations
+                // Parking calculations - any parking use (primary or secondary)
                 let parkingSF = 0;
                 if (floor.use === 'Parking') {
-                    parkingSF = floor.parkingSF || floor.gsf;
+                    parkingSF = floor.gsf;
                 }
-                if (floor.secondaryUse === 'Parking' && floor.secondarySF > 0) {
+                if (floor.hasMixedUse && floor.secondaryUse === 'Parking' && floor.secondarySF > 0) {
                     parkingSF += floor.secondarySF;
                 }
                 
                 const calcCars = parkingSF > 0 ? Math.floor(parkingSF / state.sfPerCar) : 0;
                 const actualCars = floor.actualCars || 0;
                 
-                // GSF calculations
-                // Primary: counts if countsInGSF is true (but Parking never counts)
+                // GSF calculations using the checkbox values
                 let floorGSF = 0;
-                if (floor.countsInGSF && floor.use !== 'Parking') {
+                if (floor.countsInGSF) {
                     floorGSF += floor.gsf;
                 }
-                // Secondary: counts if not Parking
-                if (floor.secondaryUse && floor.secondaryUse !== 'None' && floor.secondaryUse !== 'Parking' && floor.secondarySF > 0) {
+                if (floor.hasMixedUse && floor.secondaryCountsInGSF && floor.secondarySF > 0) {
                     floorGSF += floor.secondarySF;
                 }
                 
-                if (floorGSF > 0) {
-                    totalFloors++;
-                    totalGSF += floorGSF;
-                }
+                // Always count the floor
+                totalFloors++;
                 totalHeight += height;
+                
+                // Only add to GSF if it counts
+                totalGSF += floorGSF;
                 totalRSF += totalRSFForFloor;
                 totalCalcCars += calcCars;
                 totalActualCars += actualCars;
@@ -1688,11 +1732,11 @@
                         <td>${floor.typeName}</td>
                         <td>${floor.use}</td>
                         <td class="number">${decimalToFeetInches(height)}</td>
-                        <td class="number">${floor.countsInGSF || floor.use === 'Parking' ? formatNumber(floor.gsf) : '-'}</td>
+                        <td class="number">${formatNumber(floor.gsf)}</td>
                         <td class="number">${floor.use === 'Residential' ? Math.round(efficiency * 100) + '%' : '-'}</td>
                         <td class="number">${primaryRSF > 0 ? formatNumber(primaryRSF) : '-'}</td>
-                        <td>${floor.secondaryUse && floor.secondaryUse !== 'None' ? floor.secondaryUse : '-'}</td>
-                        <td class="number">${floor.secondarySF > 0 ? formatNumber(floor.secondarySF) : '-'}</td>
+                        <td>${floor.hasMixedUse && floor.secondaryUse ? floor.secondaryUse : '-'}</td>
+                        <td class="number">${floor.hasMixedUse && floor.secondarySF > 0 ? formatNumber(floor.secondarySF) : '-'}</td>
                         <td class="number">${parkingSF > 0 ? formatNumber(parkingSF) : '-'}</td>
                         <td class="number">${calcCars > 0 ? calcCars : '-'}</td>
                         <td class="number">${floor.actualCars ? floor.actualCars : '-'}</td>
@@ -1764,8 +1808,10 @@
                         parkingSF: ft.parkingSF,
                         actualCars: ft.actualCars,
                         isPLevel: ft.isPLevel,
+                        hasMixedUse: ft.hasMixedUse,
                         secondaryUse: ft.secondaryUse,
                         secondarySF: ft.secondarySF || 0,
+                        secondaryCountsInGSF: ft.secondaryCountsInGSF,
                         sortOrder: parseFloorLabel(label)
                     });
                 });
@@ -1789,6 +1835,37 @@
             updatePreview();
         }
 
+        // Update use type and set GSF default based on use
+        function updateFloorTypeUse(index, value) {
+            state.floorTypes[index].use = value;
+            // Parking and Mechanical default to NOT counting in GSF, all others do
+            state.floorTypes[index].countsInGSF = (value !== 'Parking' && value !== 'Mechanical');
+            renderFloorTypes();
+            updatePreview();
+        }
+
+        // Toggle mixed use section
+        function toggleMixedUse(index, checked) {
+            state.floorTypes[index].hasMixedUse = checked;
+            if (checked && !state.floorTypes[index].secondaryUse) {
+                // Default to Residential with GSF checked
+                state.floorTypes[index].secondaryUse = 'Residential';
+                state.floorTypes[index].secondaryCountsInGSF = true;
+                state.floorTypes[index].secondarySF = 0;
+            }
+            renderFloorTypes();
+            updatePreview();
+        }
+
+        // Update secondary use and set GSF default
+        function updateSecondaryUse(index, value) {
+            state.floorTypes[index].secondaryUse = value;
+            // Parking and Mechanical default to NOT counting in GSF, all others do
+            state.floorTypes[index].secondaryCountsInGSF = (value !== 'Parking' && value !== 'Mechanical');
+            renderFloorTypes();
+            updatePreview();
+        }
+
         function addFloorType() {
             const newType = {
                 name: 'New Floor Type',
@@ -1802,8 +1879,10 @@
                 actualCars: null,
                 expanded: true,
                 isPLevel: false,
+                hasMixedUse: false,
                 secondaryUse: null,
-                secondarySF: 0
+                secondarySF: 0,
+                secondaryCountsInGSF: false
             };
             state.floorTypes.push(newType);
             autoRenumberFloors();
@@ -1931,16 +2010,16 @@
 
         function getDefaultFloorTypes() {
             return [
-                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B1', endFloor: 'B1', gsf: 45000, height: "10' 0\"", countsInGSF: false, expanded: false, secondaryUse: null, secondarySF: 0 },
-                { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 38000, height: "18' 0\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
-                { name: 'P02 - Van Accessible', use: 'Parking', startFloor: 'P02', endFloor: 'P02', gsf: 40000, height: "11' 0\"", countsInGSF: false, expanded: false, isPLevel: true, secondaryUse: null, secondarySF: 0 },
-                { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P03', endFloor: 'P03', gsf: 40000, height: "9' 8\"", countsInGSF: false, expanded: false, isPLevel: true, secondaryUse: null, secondarySF: 0 },
-                { name: 'Amenity Level', use: 'Amenity', startFloor: '04', endFloor: '04', gsf: 22000, height: "12' 0\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
-                { name: 'Tower - Lower Typical', use: 'Residential', startFloor: '05', endFloor: '05', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
-                { name: 'Tower - Middle Typical', use: 'Residential', startFloor: '06', endFloor: '06', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
-                { name: 'Tower - Upper Typical', use: 'Residential', startFloor: '07', endFloor: '07', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
-                { name: 'Penthouse', use: 'Residential', startFloor: '08', endFloor: '08', gsf: 18000, height: "11' 8\"", countsInGSF: true, expanded: false, secondaryUse: null, secondarySF: 0 },
-                { name: 'Roof - Mechanical', use: 'Mechanical', startFloor: '09', endFloor: '09', gsf: 5000, height: "15' 0\"", countsInGSF: false, expanded: false, secondaryUse: null, secondarySF: 0 }
+                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B1', endFloor: 'B1', gsf: 45000, height: "10' 0\"", countsInGSF: false, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
+                { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 38000, height: "18' 0\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
+                { name: 'P02 - Van Accessible', use: 'Parking', startFloor: 'P02', endFloor: 'P02', gsf: 40000, height: "11' 0\"", countsInGSF: false, expanded: false, isPLevel: true, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
+                { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P03', endFloor: 'P03', gsf: 40000, height: "9' 8\"", countsInGSF: false, expanded: false, isPLevel: true, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
+                { name: 'Amenity Level', use: 'Amenity', startFloor: '04', endFloor: '04', gsf: 22000, height: "12' 0\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
+                { name: 'Tower - Lower Typical', use: 'Residential', startFloor: '05', endFloor: '05', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
+                { name: 'Tower - Middle Typical', use: 'Residential', startFloor: '06', endFloor: '06', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
+                { name: 'Tower - Upper Typical', use: 'Residential', startFloor: '07', endFloor: '07', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
+                { name: 'Penthouse', use: 'Residential', startFloor: '08', endFloor: '08', gsf: 18000, height: "11' 8\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
+                { name: 'Roof - Mechanical', use: 'Mechanical', startFloor: '09', endFloor: '09', gsf: 5000, height: "15' 0\"", countsInGSF: false, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false }
             ];
         }
 
@@ -2053,9 +2132,9 @@
                 // Calculate parking SF (from primary and/or secondary)
                 let parkingSF = 0;
                 if (floor.use === 'Parking') {
-                    parkingSF = floor.parkingSF || floor.gsf;
+                    parkingSF = floor.gsf;
                 }
-                if (floor.secondaryUse === 'Parking' && floor.secondarySF > 0) {
+                if (floor.hasMixedUse && floor.secondaryUse === 'Parking' && floor.secondarySF > 0) {
                     parkingSF += floor.secondarySF;
                 }
                 
@@ -2066,11 +2145,11 @@
                     floor.typeName,
                     floor.use,
                     height,
-                    floor.countsInGSF || floor.use === 'Parking' ? floor.gsf : '',
+                    floor.gsf, // Always show GSF
                     floor.use === 'Residential' ? efficiency : '',
                     '', // RSF - formula
-                    floor.secondaryUse && floor.secondaryUse !== 'None' ? floor.secondaryUse : '',
-                    floor.secondarySF > 0 ? floor.secondarySF : '',
+                    floor.hasMixedUse && floor.secondaryUse ? floor.secondaryUse : '',
+                    floor.hasMixedUse && floor.secondarySF > 0 ? floor.secondarySF : '',
                     parkingSF > 0 ? parkingSF : '',
                     '', // Calc Cars - formula
                     floor.actualCars || ''  // Actual Cars
@@ -2099,12 +2178,12 @@
                 
                 // RSF Formula - handles primary and secondary residential
                 if (floor.use === 'Residential' && floor.countsInGSF) {
-                    if (floor.secondaryUse === 'Residential' && floor.secondarySF > 0) {
+                    if (floor.hasMixedUse && floor.secondaryUse === 'Residential' && floor.secondarySF > 0) {
                         row.getCell(7).value = { formula: `IF(F${rowNum}>0,(E${rowNum}+I${rowNum})*F${rowNum},0)` };
                     } else {
                         row.getCell(7).value = { formula: `IF(F${rowNum}>0,E${rowNum}*F${rowNum},0)` };
                     }
-                } else if (floor.secondaryUse === 'Residential' && floor.secondarySF > 0) {
+                } else if (floor.hasMixedUse && floor.secondaryUse === 'Residential' && floor.secondarySF > 0) {
                     row.getCell(7).value = { formula: `I${rowNum}*${state.efficiency}` };
                 }
                 row.getCell(7).numFmt = '#,##0';
