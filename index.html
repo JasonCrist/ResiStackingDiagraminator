@@ -672,6 +672,105 @@
         .toast.error {
             background: var(--accent-red);
         }
+
+        /* Drag and Drop Styles */
+        .floor-type-card.dragging {
+            opacity: 0.5;
+            transform: scale(1.02);
+        }
+
+        .floor-type-card.drag-over {
+            border: 2px dashed var(--accent-blue);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .drag-handle {
+            cursor: grab;
+            padding: 0.5rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        /* Floor action buttons */
+        .floor-inline-actions {
+            display: flex;
+            gap: 0.25rem;
+            align-items: center;
+        }
+
+        .floor-inline-actions button {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+            border-radius: 3px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .floor-inline-actions button:hover {
+            background: var(--bg-primary);
+            border-color: var(--border-dark);
+        }
+
+        .floor-inline-actions button.add-btn {
+            color: var(--accent-green);
+        }
+
+        .floor-inline-actions button.add-btn:hover {
+            background: #dcfce7;
+        }
+
+        .floor-inline-actions button.delete-btn {
+            color: var(--accent-red);
+        }
+
+        .floor-inline-actions button.delete-btn:hover {
+            background: #fee2e2;
+        }
+
+        /* Floor count adjuster */
+        .floor-count-adjuster {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .floor-count-adjuster button {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .floor-count-adjuster button:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .floor-count-adjuster .count-display {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.875rem;
+            min-width: 60px;
+            text-align: center;
+            padding: 0.375rem 0.5rem;
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -694,11 +793,24 @@
         <aside class="sidebar">
             <!-- Project Settings -->
             <div class="sidebar-section">
-                <h3>Project Settings</h3>
+                <h3>Project Information</h3>
                 <div class="form-group">
                     <label for="projectName">Project Name</label>
                     <input type="text" id="projectName" value="My Residential Tower" oninput="updatePreview()">
                 </div>
+                <div class="form-group">
+                    <label for="projectCity">City, State</label>
+                    <input type="text" id="projectCity" value="Dallas, TX" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label for="projectNumber">Project Number</label>
+                    <input type="text" id="projectNumber" value="00000.000" oninput="updatePreview()">
+                </div>
+            </div>
+
+            <!-- Building Settings -->
+            <div class="sidebar-section">
+                <h3>Building Settings</h3>
                 <div class="form-group">
                     <label for="efficiency">Typical Floor Residential Efficiency</label>
                     <input type="range" id="efficiency" min="70" max="95" value="85" oninput="updateEfficiencyDisplay()">
@@ -908,6 +1020,8 @@
         let state = {
             floorTypes: [],
             projectName: 'My Residential Tower',
+            projectCity: 'Dallas, TX',
+            projectNumber: '00000.000',
             efficiency: 0.85,
             efficiencyGoal: 0.80,
             skip13: false,
@@ -1068,21 +1182,39 @@
                 sortOrder: parseFloorLabel(ft.startFloor)
             })).sort((a, b) => b.sortOrder - a.sortOrder);
             
-            sortedIndices.forEach(({idx: index}) => {
+            sortedIndices.forEach(({idx: index}, displayIndex) => {
                 const ft = state.floorTypes[index];
+                const floorCount = countFloorsInRange(ft.startFloor, ft.endFloor);
+                
                 const card = document.createElement('div');
                 card.className = `floor-type-card ${ft.expanded ? 'expanded' : ''}`;
+                card.draggable = true;
+                card.dataset.index = index;
+                
+                // Drag events
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+                card.addEventListener('dragover', handleDragOver);
+                card.addEventListener('drop', handleDrop);
+                card.addEventListener('dragleave', handleDragLeave);
+                
                 card.innerHTML = `
                     <div class="floor-type-header" onclick="toggleFloorType(${index})">
                         <div class="floor-type-info">
+                            <div class="drag-handle" onclick="event.stopPropagation()" title="Drag to reorder">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
+                                    <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
+                                </svg>
+                            </div>
                             <span class="floor-type-badge ${ft.use.toLowerCase()}">${ft.use}</span>
                             <span class="floor-type-name">${ft.name}</span>
-                            <span class="floor-type-range">${ft.startFloor} → ${ft.endFloor}</span>
+                            <span class="floor-type-range">${ft.startFloor} → ${ft.endFloor} (${floorCount} floor${floorCount !== 1 ? 's' : ''})</span>
                         </div>
-                        <div class="floor-type-actions" onclick="event.stopPropagation()">
-                            <button class="btn btn-sm btn-secondary" onclick="moveFloorType(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
-                            <button class="btn btn-sm btn-secondary" onclick="moveFloorType(${index}, 1)" ${index === state.floorTypes.length - 1 ? 'disabled' : ''}>↓</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteFloorType(${index})">✕</button>
+                        <div class="floor-inline-actions" onclick="event.stopPropagation()">
+                            <button class="add-btn" onclick="addFloorTypeAt(${index}, 'above')" title="Add floor type above">+ Above</button>
+                            <button class="add-btn" onclick="addFloorTypeAt(${index}, 'below')" title="Add floor type below">+ Below</button>
+                            <button class="delete-btn" onclick="deleteFloorType(${index})" title="Delete">✕</button>
                         </div>
                     </div>
                     <div class="floor-type-body">
@@ -1098,12 +1230,16 @@
                                 <input type="text" value="${ft.name}" onchange="updateFloorTypeField(${index}, 'name', this.value)">
                             </div>
                             <div class="form-group">
-                                <label>Starting Floor</label>
-                                <input type="text" value="${ft.startFloor}" onchange="updateFloorTypeField(${index}, 'startFloor', this.value)">
+                                <label>Number of Floors</label>
+                                <div class="floor-count-adjuster">
+                                    <button onclick="adjustFloorCount(${index}, -1)">−</button>
+                                    <div class="count-display">${floorCount} floor${floorCount !== 1 ? 's' : ''}</div>
+                                    <button onclick="adjustFloorCount(${index}, 1)">+</button>
+                                </div>
                             </div>
                             <div class="form-group">
-                                <label>Ending Floor</label>
-                                <input type="text" value="${ft.endFloor}" onchange="updateFloorTypeField(${index}, 'endFloor', this.value)">
+                                <label>Floor Range</label>
+                                <div class="count-display" style="text-align: left; padding: 0.5rem;">${ft.startFloor} → ${ft.endFloor}</div>
                             </div>
                             <div class="form-group">
                                 <label>GSF per Floor</label>
@@ -1133,6 +1269,178 @@
                     </div>
                 `;
                 container.appendChild(card);
+            });
+        }
+
+        // Count floors in a range
+        function countFloorsInRange(start, end) {
+            const floors = generateFloorRange(start, end, state.skip13);
+            return floors.length;
+        }
+
+        // Adjust floor count (add/remove floors from range)
+        function adjustFloorCount(index, delta) {
+            const ft = state.floorTypes[index];
+            const startNum = parseFloorLabel(ft.startFloor);
+            const endNum = parseFloorLabel(ft.endFloor);
+            
+            // Determine the direction of the range
+            const isBelowGrade = ft.startFloor.toUpperCase().startsWith('B');
+            const isPLevel = ft.startFloor.toUpperCase().startsWith('P');
+            
+            if (isBelowGrade) {
+                // For B levels: B1 to B3 means going deeper
+                // B1 = -1001, B2 = -1002, B3 = -1003
+                const startB = parseInt(ft.startFloor.match(/\d+/)?.[0]) || 1;
+                const endB = parseInt(ft.endFloor.match(/\d+/)?.[0]) || 1;
+                const newEndB = Math.max(1, endB + delta);
+                ft.endFloor = `B${newEndB}`;
+            } else if (isPLevel) {
+                // For P levels: extend upward
+                const endP = parseInt(ft.endFloor.match(/\d+/)?.[0]) || 2;
+                const newEndP = Math.max(2, endP + delta);
+                ft.endFloor = `P${newEndP}`;
+            } else if (ft.startFloor.toUpperCase() === 'G' && ft.endFloor.toUpperCase() === 'G') {
+                // Single ground floor - can't adjust
+                return;
+            } else {
+                // Regular numbered floors
+                const endFloorNum = parseInt(ft.endFloor.match(/\d+/)?.[0]) || 2;
+                const startFloorNum = parseInt(ft.startFloor.match(/\d+/)?.[0]) || 2;
+                let newEndNum = endFloorNum + delta;
+                
+                // Don't go below start
+                if (newEndNum < startFloorNum) newEndNum = startFloorNum;
+                
+                // Skip 13 if needed
+                if (state.skip13 && newEndNum === 13) {
+                    newEndNum = delta > 0 ? 14 : 12;
+                }
+                
+                ft.endFloor = String(newEndNum).padStart(2, '0');
+            }
+            
+            renderFloorTypes();
+            updatePreview();
+        }
+
+        // Drag and Drop handlers
+        let draggedItem = null;
+
+        function handleDragStart(e) {
+            draggedItem = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.index);
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.floor-type-card').forEach(card => {
+                card.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            const toIndex = parseInt(this.dataset.index);
+            
+            if (fromIndex !== toIndex) {
+                // Swap the floor types
+                const temp = state.floorTypes[fromIndex];
+                state.floorTypes[fromIndex] = state.floorTypes[toIndex];
+                state.floorTypes[toIndex] = temp;
+                
+                // Renumber all floors after swap
+                autoRenumberFloors();
+                renderFloorTypes();
+                updatePreview();
+                showToast('Floor types reordered!', 'success');
+            }
+        }
+
+        // Add floor type at specific position
+        function addFloorTypeAt(index, position) {
+            const referenceType = state.floorTypes[index];
+            const refStart = parseFloorLabel(referenceType.startFloor);
+            
+            let newType = {
+                name: 'New Floor Type',
+                use: 'Residential',
+                startFloor: '02',
+                endFloor: '02',
+                gsf: 22000,
+                height: "10' 8\"",
+                countsInGSF: true,
+                parkingSF: null,
+                actualCars: null,
+                expanded: true
+            };
+            
+            // Insert at the correct position
+            if (position === 'above') {
+                state.floorTypes.splice(index + 1, 0, newType);
+            } else {
+                state.floorTypes.splice(index, 0, newType);
+            }
+            
+            // Auto-renumber
+            autoRenumberFloors();
+            renderFloorTypes();
+            updatePreview();
+        }
+
+        // Auto-renumber all floors based on order
+        function autoRenumberFloors() {
+            // Sort by current start floor to maintain relative order
+            state.floorTypes.sort((a, b) => {
+                return parseFloorLabel(a.startFloor) - parseFloorLabel(b.startFloor);
+            });
+            
+            let currentFloor = 2; // Start after ground
+            
+            state.floorTypes.forEach((ft) => {
+                const isBelowGrade = ft.startFloor.toUpperCase().startsWith('B');
+                const isPLevel = ft.startFloor.toUpperCase().startsWith('P');
+                const isGround = ['G', 'GROUND', 'GF'].includes(ft.startFloor.toUpperCase());
+                
+                // Skip basement and P-levels - they have their own numbering
+                if (isBelowGrade || isPLevel || isGround) {
+                    return;
+                }
+                
+                const floorCount = countFloorsInRange(ft.startFloor, ft.endFloor);
+                let newStart = currentFloor;
+                let newEnd = currentFloor + floorCount - 1;
+                
+                // Handle skip 13
+                if (state.skip13) {
+                    if (newStart <= 13 && newEnd >= 13) {
+                        newEnd++;
+                    }
+                    if (newStart === 13) newStart = 14;
+                }
+                
+                ft.startFloor = String(newStart).padStart(2, '0');
+                ft.endFloor = String(newEnd).padStart(2, '0');
+                
+                currentFloor = newEnd + 1;
+                if (state.skip13 && currentFloor === 13) {
+                    currentFloor = 14;
+                }
             });
         }
 
@@ -1298,24 +1606,14 @@
                 expanded: true
             };
             state.floorTypes.push(newType);
+            autoRenumberFloors();
             renderFloorTypes();
             updatePreview();
         }
 
         function deleteFloorType(index) {
             state.floorTypes.splice(index, 1);
-            renderFloorTypes();
-            updatePreview();
-        }
-
-        function moveFloorType(index, direction) {
-            const newIndex = index + direction;
-            if (newIndex < 0 || newIndex >= state.floorTypes.length) return;
-            
-            const temp = state.floorTypes[index];
-            state.floorTypes[index] = state.floorTypes[newIndex];
-            state.floorTypes[newIndex] = temp;
-            
+            autoRenumberFloors();
             renderFloorTypes();
             updatePreview();
         }
@@ -1357,6 +1655,8 @@
         function updatePreview() {
             // Update state from inputs
             state.projectName = document.getElementById('projectName').value;
+            state.projectCity = document.getElementById('projectCity').value;
+            state.projectNumber = document.getElementById('projectNumber').value;
             state.skip13 = document.getElementById('skip13').checked;
             state.sfPerCar = parseInt(document.getElementById('sfPerCar').value) || 410;
             state.parkingRatio = parseFloat(document.getElementById('parkingRatio').value) || 0.9;
@@ -1378,77 +1678,7 @@
         }
 
         function renumberFloors() {
-            // Sort floor types by their starting floor (lowest to highest)
-            const sortedTypes = [...state.floorTypes].sort((a, b) => {
-                return parseFloorLabel(a.startFloor) - parseFloorLabel(b.startFloor);
-            });
-            
-            let currentFloor = null;
-            
-            sortedTypes.forEach((ft, idx) => {
-                const startNum = parseFloorLabel(ft.startFloor);
-                const endNum = parseFloorLabel(ft.endFloor);
-                const floorCount = Math.abs(endNum - startNum) + 1;
-                
-                // Below grade floors
-                if (ft.startFloor.toUpperCase().startsWith('B')) {
-                    // Keep B-levels as they are - they're typically fixed
-                    return;
-                }
-                
-                // P-levels (parking above grade)
-                if (ft.startFloor.toUpperCase().startsWith('P')) {
-                    // Keep P-levels as they are
-                    return;
-                }
-                
-                // Ground floor
-                if (['G', 'GROUND', 'GF'].includes(ft.startFloor.toUpperCase())) {
-                    currentFloor = 1;
-                    return;
-                }
-                
-                // Above grade numbered floors
-                if (currentFloor === null) {
-                    // First numbered floor type, start from its current position
-                    currentFloor = startNum;
-                }
-                
-                // Find the original index in state.floorTypes
-                const origIdx = state.floorTypes.findIndex(f => f === ft);
-                
-                // Calculate new start and end
-                let newStart = currentFloor;
-                let newEnd = currentFloor + floorCount - 1;
-                
-                // Account for skip 13
-                if (state.skip13) {
-                    if (newStart <= 13 && newEnd >= 13) {
-                        newEnd++; // Add one more to account for skipped 13
-                    }
-                }
-                
-                // Update the floor type
-                if (newStart === 1) {
-                    state.floorTypes[origIdx].startFloor = 'G';
-                } else {
-                    state.floorTypes[origIdx].startFloor = String(newStart).padStart(2, '0');
-                }
-                
-                if (newEnd === 1) {
-                    state.floorTypes[origIdx].endFloor = 'G';
-                } else {
-                    state.floorTypes[origIdx].endFloor = String(newEnd).padStart(2, '0');
-                }
-                
-                currentFloor = newEnd + 1;
-                
-                // Skip 13 if needed
-                if (state.skip13 && currentFloor === 13) {
-                    currentFloor = 14;
-                }
-            });
-            
+            autoRenumberFloors();
             renderFloorTypes();
             showToast('Floors renumbered!', 'success');
             updatePreview();
@@ -1460,6 +1690,8 @@
             state = {
                 floorTypes: getDefaultFloorTypes(),
                 projectName: 'My Residential Tower',
+                projectCity: 'Dallas, TX',
+                projectNumber: '00000.000',
                 efficiency: 0.85,
                 efficiencyGoal: 0.80,
                 skip13: false,
@@ -1481,6 +1713,8 @@
             
             // Reset form inputs
             document.getElementById('projectName').value = state.projectName;
+            document.getElementById('projectCity').value = state.projectCity;
+            document.getElementById('projectNumber').value = state.projectNumber;
             document.getElementById('efficiency').value = state.efficiency * 100;
             document.getElementById('efficiencyValue').textContent = Math.round(state.efficiency * 100) + '%';
             document.getElementById('efficiencyGoal').value = state.efficiencyGoal * 100;
@@ -1497,7 +1731,7 @@
 
         function getDefaultFloorTypes() {
             return [
-                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B3', endFloor: 'B1', gsf: 45000, height: "10' 0\"", countsInGSF: false, expanded: false },
+                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B1', endFloor: 'B3', gsf: 45000, height: "10' 0\"", countsInGSF: false, expanded: false },
                 { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 38000, height: "18' 0\"", countsInGSF: true, expanded: false },
                 { name: 'P2 - Van Accessible', use: 'Parking', startFloor: 'P2', endFloor: 'P2', gsf: 40000, height: "11' 0\"", countsInGSF: false, expanded: false },
                 { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P3', endFloor: 'P4', gsf: 40000, height: "9' 8\"", countsInGSF: false, expanded: false },
@@ -1531,21 +1765,48 @@
                 alignment: { vertical: 'middle' }
             };
             
-            // Add title
-            worksheet.mergeCells('A1:K1');
+            // Add project header section
+            // Row 1: Project Name
+            worksheet.mergeCells('A1:J1');
             const titleCell = worksheet.getCell('A1');
             titleCell.value = state.projectName;
             titleCell.font = { bold: true, size: 16 };
-            titleCell.alignment = { horizontal: 'center' };
+            titleCell.alignment = { horizontal: 'left' };
             
-            // Add column headers
+            // Row 2: City, State
+            worksheet.mergeCells('A2:J2');
+            const cityCell = worksheet.getCell('A2');
+            cityCell.value = state.projectCity;
+            cityCell.font = { size: 12 };
+            cityCell.alignment = { horizontal: 'left' };
+            
+            // Row 3: Project Number
+            worksheet.mergeCells('A3:J3');
+            const projectNumCell = worksheet.getCell('A3');
+            projectNumCell.value = `HKS Project# ${state.projectNumber}`;
+            projectNumCell.font = { size: 11 };
+            projectNumCell.alignment = { horizontal: 'left' };
+            
+            // Row 4: Date
+            worksheet.mergeCells('A4:J4');
+            const dateCell = worksheet.getCell('A4');
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            dateCell.value = dateStr;
+            dateCell.font = { size: 11, italic: true };
+            dateCell.alignment = { horizontal: 'left' };
+            
+            // Row 5: Blank
+            worksheet.addRow([]);
+            
+            // Row 6: Column headers
             const headers = ['Floor', 'Type', 'Use', 'Height', 'GSF', 'Efficiency', 'RSF', 'Parking SF', 'Calc Cars', 'Actual Cars'];
-            const headerRow = worksheet.addRow(headers);
-            headerRow.eachCell((cell) => {
+            worksheet.getRow(6).values = headers;
+            worksheet.getRow(6).eachCell((cell) => {
                 Object.assign(cell, headerStyle);
             });
             
-            // Add blank row after header
+            // Row 7: Blank row after header
             worksheet.addRow([]);
             
             // Set column widths
@@ -1566,7 +1827,7 @@
             const allFloors = generateAllFloors();
             allFloors.sort((a, b) => b.sortOrder - a.sortOrder);
             
-            const firstDataRow = 4; // Row 4 because of title, header, blank row
+            const firstDataRow = 8; // Row 8 because of header section
             let rowNum = firstDataRow;
             
             // Use color mapping
