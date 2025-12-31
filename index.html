@@ -466,6 +466,7 @@
         /* Row colors by use type */
         .preview-table tr.use-residential { background: #f0fdf4; }
         .preview-table tr.use-parking { background: #f9fafb; }
+        .preview-table tr.use-parking.below-grade { background: #9ca3af; color: #1f2937; }
         .preview-table tr.use-retail { background: #eff6ff; }
         .preview-table tr.use-amenity { background: #faf5ff; }
         .preview-table tr.use-mechanical { background: #fff7ed; }
@@ -473,6 +474,7 @@
 
         .preview-table tr.use-residential:hover { background: #dcfce7; }
         .preview-table tr.use-parking:hover { background: #f3f4f6; }
+        .preview-table tr.use-parking.below-grade:hover { background: #6b7280; }
         .preview-table tr.use-retail:hover { background: #dbeafe; }
         .preview-table tr.use-amenity:hover { background: #f3e8ff; }
         .preview-table tr.use-mechanical:hover { background: #ffedd5; }
@@ -847,6 +849,81 @@
             align-items: center;
         }
 
+        /* Compact sidebar styles */
+        .sidebar-section.compact {
+            padding: 0.75rem 1rem;
+        }
+
+        .sidebar-section.compact h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .form-group.half {
+            flex: 1;
+        }
+
+        .radio-group.compact {
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0.25rem 0.75rem;
+        }
+
+        .radio-group.compact .radio-option {
+            padding: 0.25rem 0;
+        }
+
+        .radio-group.compact .radio-option span {
+            font-size: 0.8rem;
+        }
+
+        /* Collapsible details for default heights */
+        .compact-details {
+            margin-top: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .compact-details summary {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+        }
+
+        .compact-details[open] summary {
+            border-radius: 6px 6px 0 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .compact-details .default-heights-grid {
+            padding: 0.5rem;
+        }
+
+        .default-heights-grid.compact {
+            gap: 0.25rem;
+        }
+
+        .default-heights-grid.compact .default-height-item {
+            padding: 0.25rem;
+        }
+
+        .default-heights-grid.compact input {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .default-heights-grid.compact label {
+            font-size: 0.7rem;
+        }
+
         /* SF input with inline GSF checkbox */
         .sf-input-group {
             display: flex;
@@ -941,77 +1018,79 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Default Heights (collapsible) -->
+                <details class="compact-details">
+                    <summary>Default Heights</summary>
+                    <div class="default-heights-grid compact">
+                        <div class="default-height-item">
+                            <label>Below Grade</label>
+                            <input type="text" id="defaultHeightBelowGrade" value="10' 0&quot;">
+                        </div>
+                        <div class="default-height-item">
+                            <label>Ground</label>
+                            <input type="text" id="defaultHeightGround" value="18' 0&quot;">
+                        </div>
+                        <div class="default-height-item">
+                            <label>P2 (Van)</label>
+                            <input type="text" id="defaultHeightP2" value="11' 0&quot;">
+                        </div>
+                        <div class="default-height-item">
+                            <label>P3+ Parking</label>
+                            <input type="text" id="defaultHeightParking" value="9' 8&quot;">
+                        </div>
+                        <div class="default-height-item">
+                            <label>Residential</label>
+                            <input type="text" id="defaultHeightResidential" value="10' 8&quot;">
+                        </div>
+                        <div class="default-height-item">
+                            <label>Amenity</label>
+                            <input type="text" id="defaultHeightAmenity" value="12' 0&quot;">
+                        </div>
+                        <div class="default-height-item">
+                            <label>Penthouse</label>
+                            <input type="text" id="defaultHeightPenthouse" value="11' 8&quot;">
+                        </div>
+                        <div class="default-height-item">
+                            <label>Mechanical</label>
+                            <input type="text" id="defaultHeightMechanical" value="15' 0&quot;">
+                        </div>
+                    </div>
+                </details>
             </div>
 
             <!-- Parking Calculator -->
-            <div class="sidebar-section">
+            <div class="sidebar-section compact">
                 <h3>Parking Calculator</h3>
-                <div class="form-group">
-                    <label for="sfPerCar">SF per Car</label>
-                    <input type="number" id="sfPerCar" value="410" min="100" max="600" oninput="updatePreview()">
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="sfPerCar">SF per Car</label>
+                        <input type="number" id="sfPerCar" value="410" min="100" max="600" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group half" id="parkingRatioGroup">
+                        <label for="parkingRatio">Cars/Bed Ratio</label>
+                        <input type="number" id="parkingRatio" value="0.9" min="0.1" max="3" step="0.1" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group half hidden" id="fixedParkingGroup">
+                        <label for="fixedParking">Required Cars</label>
+                        <input type="number" id="fixedParking" value="150" min="1" oninput="updatePreview()">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>Parking Ratio Method</label>
-                    <div class="radio-group">
+                    <label>Ratio Method</label>
+                    <div class="radio-group compact">
                         <label class="radio-option">
                             <input type="radio" name="parkingMethod" value="beds" checked onchange="updateParkingMethod()">
-                            <span>Cars per Bed</span>
+                            <span>per Bed</span>
                         </label>
                         <label class="radio-option">
                             <input type="radio" name="parkingMethod" value="units" onchange="updateParkingMethod()">
-                            <span>Cars per Unit</span>
+                            <span>per Unit</span>
                         </label>
                         <label class="radio-option">
                             <input type="radio" name="parkingMethod" value="fixed" onchange="updateParkingMethod()">
-                            <span>Fixed Count</span>
+                            <span>Fixed</span>
                         </label>
-                    </div>
-                </div>
-                <div class="form-group" id="parkingRatioGroup">
-                    <label for="parkingRatio">Cars per Bed Ratio</label>
-                    <input type="number" id="parkingRatio" value="0.9" min="0.1" max="3" step="0.1" oninput="updatePreview()">
-                </div>
-                <div class="form-group hidden" id="fixedParkingGroup">
-                    <label for="fixedParking">Required Cars</label>
-                    <input type="number" id="fixedParking" value="150" min="1" oninput="updatePreview()">
-                </div>
-            </div>
-
-            <!-- Default Heights -->
-            <div class="sidebar-section">
-                <h3>Default Heights</h3>
-                <div class="default-heights-grid">
-                    <div class="default-height-item">
-                        <label>Below Grade</label>
-                        <input type="text" id="defaultHeightBelowGrade" value="10' 0&quot;" oninput="updatePreview()">
-                    </div>
-                    <div class="default-height-item">
-                        <label>Ground</label>
-                        <input type="text" id="defaultHeightGround" value="18' 0&quot;" oninput="updatePreview()">
-                    </div>
-                    <div class="default-height-item">
-                        <label>P2 (Van)</label>
-                        <input type="text" id="defaultHeightP2" value="11' 0&quot;" oninput="updatePreview()">
-                    </div>
-                    <div class="default-height-item">
-                        <label>P3+ Parking</label>
-                        <input type="text" id="defaultHeightParking" value="9' 8&quot;" oninput="updatePreview()">
-                    </div>
-                    <div class="default-height-item">
-                        <label>Residential</label>
-                        <input type="text" id="defaultHeightResidential" value="10' 8&quot;" oninput="updatePreview()">
-                    </div>
-                    <div class="default-height-item">
-                        <label>Amenity</label>
-                        <input type="text" id="defaultHeightAmenity" value="12' 0&quot;" oninput="updatePreview()">
-                    </div>
-                    <div class="default-height-item">
-                        <label>Penthouse</label>
-                        <input type="text" id="defaultHeightPenthouse" value="11' 8&quot;" oninput="updatePreview()">
-                    </div>
-                    <div class="default-height-item">
-                        <label>Mechanical</label>
-                        <input type="text" id="defaultHeightMechanical" value="15' 0&quot;" oninput="updatePreview()">
                     </div>
                 </div>
             </div>
@@ -1058,10 +1137,6 @@
             <!-- Floor Types Configuration -->
             <div class="floor-types-header">
                 <h2>Floor Type Configuration</h2>
-                <button class="btn btn-primary" onclick="addFloorType()">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add Floor Type
-                </button>
             </div>
 
             <div id="floorTypesContainer">
@@ -1106,7 +1181,7 @@
                 <!-- Parking Summary -->
                 <div class="parking-summary">
                     <h3>
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10l-2.5-5c-.3-.6-.9-1-1.5-1h-5c-.6 0-1.2.4-1.5 1L5 10l-2.5 1.1C1.7 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3v-3l2.5-1L8 8h8l2.5 5 2.5 1v3h-2"/></svg>
                         Parking Summary
                     </h3>
                     <div class="parking-summary-grid">
@@ -1240,6 +1315,14 @@
             return 'P' + num;
         }
 
+        // Format B-level with leading zero
+        function formatBLevel(num) {
+            if (num < 10 && num > 0) {
+                return 'B0' + num;
+            }
+            return 'B' + num;
+        }
+
         function generateFloorRange(start, end, skip13 = false) {
             const startNum = parseFloorLabel(start);
             const endNum = parseFloorLabel(end);
@@ -1247,12 +1330,12 @@
             
             const isPRange = String(start).toUpperCase().startsWith('P') || String(end).toUpperCase().startsWith('P');
             
-            // Below grade range (B1 -> B3, shallow to deep)
+            // Below grade range (B01 -> B03, shallow to deep)
             if (startNum < 0 && endNum < 0) {
                 const startB = Math.abs(startNum + 1000);
                 const endB = Math.abs(endNum + 1000);
                 for (let i = Math.min(startB, endB); i <= Math.max(startB, endB); i++) {
-                    floors.push(`B${i}`);
+                    floors.push(formatBLevel(i));
                 }
             }
             // P-levels (parking above grade, part of floor sequence)
@@ -1270,7 +1353,7 @@
                 if (startNum < 0) {
                     const startB = Math.abs(startNum + 1000);
                     for (let i = 1; i <= startB; i++) {
-                        floors.push(`B${i}`);
+                        floors.push(formatBLevel(i));
                     }
                 }
                 // Ground
@@ -1492,11 +1575,11 @@
             }
             
             if (isBelowGrade) {
-                // For B levels: B1 to B3 means going deeper
+                // For B levels: B01 to B03 means going deeper
                 const startB = parseInt(ft.startFloor.match(/\d+/)?.[0]) || 1;
                 const endB = parseInt(ft.endFloor.match(/\d+/)?.[0]) || 1;
                 const newEndB = Math.max(startB, endB + delta);
-                ft.endFloor = `B${newEndB}`;
+                ft.endFloor = formatBLevel(newEndB);
             } else if (isPLevel) {
                 // P-levels are part of sequence - adjust end floor
                 const startP = parseInt(ft.startFloor.match(/\d+/)?.[0]) || 2;
@@ -1553,27 +1636,18 @@
             const toIndex = parseInt(this.dataset.index);
             
             if (fromIndex !== toIndex && !isNaN(fromIndex) && !isNaN(toIndex)) {
-                // Get the floor types
-                const fromType = state.floorTypes[fromIndex];
-                const toType = state.floorTypes[toIndex];
+                // Remove the item from its original position
+                const [movedItem] = state.floorTypes.splice(fromIndex, 1);
                 
-                // Swap the floor ranges (so visual positions actually change)
-                const tempStart = fromType.startFloor;
-                const tempEnd = fromType.endFloor;
-                const tempIsPLevel = fromType.isPLevel;
+                // Insert at the new position (adjust if needed after removal)
+                const insertIndex = fromIndex < toIndex ? toIndex : toIndex;
+                state.floorTypes.splice(insertIndex, 0, movedItem);
                 
-                fromType.startFloor = toType.startFloor;
-                fromType.endFloor = toType.endFloor;
-                fromType.isPLevel = toType.isPLevel;
-                
-                toType.startFloor = tempStart;
-                toType.endFloor = tempEnd;
-                toType.isPLevel = tempIsPLevel;
-                
-                // Re-render (don't call autoRenumberFloors - that would undo the swap)
+                // Re-renumber all floors after the move
+                autoRenumberFloors();
                 renderFloorTypes();
                 updatePreview();
-                showToast('Floor types reordered!', 'success');
+                showToast('Floor type moved!', 'success');
             }
         }
 
@@ -1769,8 +1843,11 @@
                     totalUnits += unitsOnFloor;
                 }
                 
+                const isBelowGrade = floor.label.toUpperCase().startsWith('B');
+                const rowClasses = `use-${floor.use.toLowerCase()}${isBelowGrade ? ' below-grade' : ''}`;
+                
                 html += `
-                    <tr class="use-${floor.use.toLowerCase()}">
+                    <tr class="${rowClasses}">
                         <td class="text-mono">${floor.label}</td>
                         <td>${floor.typeName}</td>
                         <td>${floor.use}</td>
@@ -2066,7 +2143,8 @@
 
         function getDefaultFloorTypes() {
             return [
-                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B1', endFloor: 'B1', gsf: 10000, height: "10' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B02', endFloor: 'B02', gsf: 10000, height: "10' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Below Grade Parking - Van Accessible', use: 'Parking', startFloor: 'B01', endFloor: 'B01', gsf: 10000, height: "11' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
                 { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 10000, height: "18' 0\"", countsInGSF: true, expanded: false, additionalUses: getDefaultAdditionalUses() },
                 { name: 'P02 - Van Accessible', use: 'Parking', startFloor: 'P02', endFloor: 'P02', gsf: 10000, height: "11' 0\"", countsInGSF: false, expanded: false, isPLevel: true, additionalUses: getDefaultAdditionalUses() },
                 { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P03', endFloor: 'P03', gsf: 10000, height: "9' 8\"", countsInGSF: false, expanded: false, isPLevel: true, additionalUses: getDefaultAdditionalUses() },
