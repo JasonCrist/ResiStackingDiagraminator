@@ -700,9 +700,14 @@
                     <input type="text" id="projectName" value="My Residential Tower" oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                    <label for="efficiency">Residential Efficiency</label>
-                    <input type="range" id="efficiency" min="70" max="95" value="86" oninput="updateEfficiencyDisplay()">
-                    <div class="range-value" id="efficiencyValue">86%</div>
+                    <label for="efficiency">Typical Floor Residential Efficiency</label>
+                    <input type="range" id="efficiency" min="70" max="95" value="85" oninput="updateEfficiencyDisplay()">
+                    <div class="range-value" id="efficiencyValue">85%</div>
+                </div>
+                <div class="form-group">
+                    <label for="efficiencyGoal">Overall Efficiency Goal</label>
+                    <input type="range" id="efficiencyGoal" min="70" max="95" value="80" oninput="updateEfficiencyGoalDisplay()">
+                    <div class="range-value" id="efficiencyGoalValue">80%</div>
                 </div>
                 <div class="form-group">
                     <label class="checkbox-group">
@@ -861,8 +866,7 @@
                                 <th class="number">RSF</th>
                                 <th class="number">Parking SF</th>
                                 <th class="number">Calc Cars</th>
-                                <th class="number">Actual</th>
-                                <th class="number">Final Cars</th>
+                                <th class="number">Actual Cars</th>
                             </tr>
                         </thead>
                         <tbody id="previewTableBody">
@@ -904,7 +908,8 @@
         let state = {
             floorTypes: [],
             projectName: 'My Residential Tower',
-            efficiency: 0.86,
+            efficiency: 0.85,
+            efficiencyGoal: 0.80,
             skip13: false,
             sfPerCar: 410,
             parkingMethod: 'beds',
@@ -1057,7 +1062,14 @@
             const container = document.getElementById('floorTypesContainer');
             container.innerHTML = '';
             
-            state.floorTypes.forEach((ft, index) => {
+            // Create a sorted copy for display (roof at top, basement at bottom)
+            const sortedIndices = state.floorTypes.map((ft, idx) => ({
+                idx,
+                sortOrder: parseFloorLabel(ft.startFloor)
+            })).sort((a, b) => b.sortOrder - a.sortOrder);
+            
+            sortedIndices.forEach(({idx: index}) => {
+                const ft = state.floorTypes[index];
                 const card = document.createElement('div');
                 card.className = `floor-type-card ${ft.expanded ? 'expanded' : ''}`;
                 card.innerHTML = `
@@ -1139,6 +1151,8 @@
             let totalParkingSF = 0;
             let totalBeds = 0;
             let totalUnits = 0;
+            let totalCalcCars = 0;
+            let totalActualCars = 0;
             
             let html = '';
             
@@ -1148,7 +1162,7 @@
                 const rsf = floor.use === 'Residential' ? Math.round(floor.gsf * efficiency) : 0;
                 const parkingSF = floor.use === 'Parking' ? (floor.parkingSF || floor.gsf) : 0;
                 const calcCars = parkingSF > 0 ? Math.floor(parkingSF / state.sfPerCar) : 0;
-                const finalCars = floor.actualCars || calcCars;
+                const actualCars = floor.actualCars || 0;
                 
                 if (floor.countsInGSF) {
                     totalFloors++;
@@ -1156,7 +1170,9 @@
                 }
                 totalHeight += height;
                 totalRSF += rsf;
-                totalParking += finalCars;
+                totalCalcCars += calcCars;
+                totalActualCars += actualCars;
+                totalParking += actualCars > 0 ? actualCars : calcCars;
                 totalParkingSF += parkingSF;
                 
                 // Estimate beds/units for residential
@@ -1180,7 +1196,6 @@
                         <td class="number">${parkingSF > 0 ? formatNumber(parkingSF) : '-'}</td>
                         <td class="number">${calcCars > 0 ? calcCars : '-'}</td>
                         <td class="number">${floor.actualCars ? floor.actualCars : '-'}</td>
-                        <td class="number">${finalCars > 0 ? finalCars : '-'}</td>
                     </tr>
                 `;
             });
@@ -1196,9 +1211,8 @@
                     <td class="number">${overallEfficiency.toFixed(1)}%</td>
                     <td class="number">${formatNumber(totalRSF)} RSF</td>
                     <td class="number">${formatNumber(totalParkingSF)} SF</td>
-                    <td class="number">-</td>
-                    <td class="number">-</td>
-                    <td class="number">${totalParking} cars</td>
+                    <td class="number">${totalCalcCars} cars</td>
+                    <td class="number">${totalActualCars > 0 ? totalActualCars + ' cars' : '-'}</td>
                 </tr>
             `;
             
@@ -1313,6 +1327,13 @@
             updatePreview();
         }
 
+        function updateEfficiencyGoalDisplay() {
+            const value = document.getElementById('efficiencyGoal').value;
+            document.getElementById('efficiencyGoalValue').textContent = value + '%';
+            state.efficiencyGoal = value / 100;
+            updatePreview();
+        }
+
         function updateParkingMethod() {
             const method = document.querySelector('input[name="parkingMethod"]:checked').value;
             state.parkingMethod = method;
@@ -1357,15 +1378,78 @@
         }
 
         function renumberFloors() {
-            // Auto-renumber all floor types based on their position and type
-            let currentFloor = 1;
-            let currentBasement = 1;
-            
-            // Sort floor types by their first floor's sort order
+            // Sort floor types by their starting floor (lowest to highest)
             const sortedTypes = [...state.floorTypes].sort((a, b) => {
                 return parseFloorLabel(a.startFloor) - parseFloorLabel(b.startFloor);
             });
             
+            let currentFloor = null;
+            
+            sortedTypes.forEach((ft, idx) => {
+                const startNum = parseFloorLabel(ft.startFloor);
+                const endNum = parseFloorLabel(ft.endFloor);
+                const floorCount = Math.abs(endNum - startNum) + 1;
+                
+                // Below grade floors
+                if (ft.startFloor.toUpperCase().startsWith('B')) {
+                    // Keep B-levels as they are - they're typically fixed
+                    return;
+                }
+                
+                // P-levels (parking above grade)
+                if (ft.startFloor.toUpperCase().startsWith('P')) {
+                    // Keep P-levels as they are
+                    return;
+                }
+                
+                // Ground floor
+                if (['G', 'GROUND', 'GF'].includes(ft.startFloor.toUpperCase())) {
+                    currentFloor = 1;
+                    return;
+                }
+                
+                // Above grade numbered floors
+                if (currentFloor === null) {
+                    // First numbered floor type, start from its current position
+                    currentFloor = startNum;
+                }
+                
+                // Find the original index in state.floorTypes
+                const origIdx = state.floorTypes.findIndex(f => f === ft);
+                
+                // Calculate new start and end
+                let newStart = currentFloor;
+                let newEnd = currentFloor + floorCount - 1;
+                
+                // Account for skip 13
+                if (state.skip13) {
+                    if (newStart <= 13 && newEnd >= 13) {
+                        newEnd++; // Add one more to account for skipped 13
+                    }
+                }
+                
+                // Update the floor type
+                if (newStart === 1) {
+                    state.floorTypes[origIdx].startFloor = 'G';
+                } else {
+                    state.floorTypes[origIdx].startFloor = String(newStart).padStart(2, '0');
+                }
+                
+                if (newEnd === 1) {
+                    state.floorTypes[origIdx].endFloor = 'G';
+                } else {
+                    state.floorTypes[origIdx].endFloor = String(newEnd).padStart(2, '0');
+                }
+                
+                currentFloor = newEnd + 1;
+                
+                // Skip 13 if needed
+                if (state.skip13 && currentFloor === 13) {
+                    currentFloor = 14;
+                }
+            });
+            
+            renderFloorTypes();
             showToast('Floors renumbered!', 'success');
             updatePreview();
         }
@@ -1376,7 +1460,8 @@
             state = {
                 floorTypes: getDefaultFloorTypes(),
                 projectName: 'My Residential Tower',
-                efficiency: 0.86,
+                efficiency: 0.85,
+                efficiencyGoal: 0.80,
                 skip13: false,
                 sfPerCar: 410,
                 parkingMethod: 'beds',
@@ -1398,6 +1483,8 @@
             document.getElementById('projectName').value = state.projectName;
             document.getElementById('efficiency').value = state.efficiency * 100;
             document.getElementById('efficiencyValue').textContent = Math.round(state.efficiency * 100) + '%';
+            document.getElementById('efficiencyGoal').value = state.efficiencyGoal * 100;
+            document.getElementById('efficiencyGoalValue').textContent = Math.round(state.efficiencyGoal * 100) + '%';
             document.getElementById('skip13').checked = state.skip13;
             document.getElementById('sfPerCar').value = state.sfPerCar;
             document.getElementById('parkingRatio').value = state.parkingRatio;
@@ -1452,11 +1539,14 @@
             titleCell.alignment = { horizontal: 'center' };
             
             // Add column headers
-            const headers = ['Floor', 'Type', 'Use', 'Height', 'GSF', 'Efficiency', 'RSF', 'Parking SF', 'Calc Cars', 'Actual', 'Final Cars'];
+            const headers = ['Floor', 'Type', 'Use', 'Height', 'GSF', 'Efficiency', 'RSF', 'Parking SF', 'Calc Cars', 'Actual Cars'];
             const headerRow = worksheet.addRow(headers);
             headerRow.eachCell((cell) => {
                 Object.assign(cell, headerStyle);
             });
+            
+            // Add blank row after header
+            worksheet.addRow([]);
             
             // Set column widths
             worksheet.columns = [
@@ -1469,31 +1559,34 @@
                 { width: 15 },  // RSF
                 { width: 15 },  // Parking SF
                 { width: 12 },  // Calc Cars
-                { width: 10 },  // Actual
-                { width: 12 }   // Final Cars
+                { width: 12 }   // Actual Cars
             ];
             
             // Generate floor data
             const allFloors = generateAllFloors();
             allFloors.sort((a, b) => b.sortOrder - a.sortOrder);
             
-            const firstDataRow = 3;
+            const firstDataRow = 4; // Row 4 because of title, header, blank row
             let rowNum = firstDataRow;
             
             // Use color mapping
             const useColors = {
                 'Residential': 'FFF0FDF4',
-                'Parking': 'FFF9FAFB',
+                'Parking': 'FFD1D5DB',      // Darker gray for parking
                 'Retail': 'FFEFF6FF',
                 'Amenity': 'FFFAF5FF',
                 'Mechanical': 'FFFFF7ED',
                 'Office': 'FFECFEFF'
             };
             
+            // Below grade gets even darker gray
+            const belowGradeColor = 'FF9CA3AF';
+            
             allFloors.forEach((floor, index) => {
                 const height = feetInchesToDecimal(floor.height);
                 const efficiency = floor.use === 'Residential' ? state.efficiency : 0;
                 const parkingSF = floor.use === 'Parking' ? (floor.parkingSF || floor.gsf) : 0;
+                const isBelowGrade = floor.label.toUpperCase().startsWith('B');
                 
                 const row = worksheet.addRow([
                     floor.label,
@@ -1505,16 +1598,16 @@
                     '', // RSF - formula
                     parkingSF > 0 ? parkingSF : '',
                     '', // Calc Cars - formula
-                    floor.actualCars || '',
-                    ''  // Final Cars - formula
+                    floor.actualCars || ''  // Actual Cars
                 ]);
                 
-                // Apply row color based on use type
+                // Apply row color based on use type (darker for below grade)
+                const rowColor = isBelowGrade ? belowGradeColor : (useColors[floor.use] || 'FFFFFFFF');
                 row.eachCell((cell) => {
                     cell.fill = {
                         type: 'pattern',
                         pattern: 'solid',
-                        fgColor: { argb: useColors[floor.use] || 'FFFFFFFF' }
+                        fgColor: { argb: rowColor }
                     };
                 });
                 
@@ -1543,29 +1636,27 @@
                     row.getCell(9).value = { formula: `IF(H${rowNum}>0,INT(H${rowNum}/${state.sfPerCar}),"")` };
                 }
                 
-                // Final Cars Formula: =IF(J{row}>0, J{row}, I{row})
-                if (floor.use === 'Parking') {
-                    row.getCell(11).value = { formula: `IF(J${rowNum}>0,J${rowNum},I${rowNum})` };
-                }
-                
                 rowNum++;
             });
             
             const lastDataRow = rowNum - 1;
             
+            // Add blank row before totals
+            worksheet.addRow([]);
+            rowNum++;
+            
             // Add Totals Row
             const totalsRow = worksheet.addRow([
                 'TOTALS',
-                `=COUNTA(B${firstDataRow}:B${lastDataRow})&" Floors"`,
+                { formula: `COUNTA(B${firstDataRow}:B${lastDataRow}) & " Floors"` },
                 '',
                 { formula: `SUM(D${firstDataRow}:D${lastDataRow})` },
                 { formula: `SUM(E${firstDataRow}:E${lastDataRow})` },
                 '',
                 { formula: `SUM(G${firstDataRow}:G${lastDataRow})` },
                 { formula: `SUM(H${firstDataRow}:H${lastDataRow})` },
-                '',
-                '',
-                { formula: `SUM(K${firstDataRow}:K${lastDataRow})` }
+                { formula: `SUM(I${firstDataRow}:I${lastDataRow})` },
+                { formula: `SUM(J${firstDataRow}:J${lastDataRow})` }
             ]);
             
             totalsRow.eachCell((cell, colNumber) => {
@@ -1574,10 +1665,15 @@
                 if (colNumber === 5) cell.numFmt = '#,##0" GSF"';
                 if (colNumber === 7) cell.numFmt = '#,##0" RSF"';
                 if (colNumber === 8) cell.numFmt = '#,##0" SF"';
-                if (colNumber === 11) cell.numFmt = '#,##0" cars"';
+                if (colNumber === 9) cell.numFmt = '#,##0" cars"';
+                if (colNumber === 10) cell.numFmt = '#,##0" cars"';
             });
             
             const totalsRowNum = rowNum;
+            rowNum++;
+            
+            // Add blank row after totals
+            worksheet.addRow([]);
             rowNum++;
             
             // Add Overall Efficiency row
@@ -1587,17 +1683,18 @@
             effRow.getCell(6).font = { bold: true };
             rowNum++;
             
-            // Add Delta to 80% row
-            const deltaRow = worksheet.addRow(['', '', '', '', 'Delta to 80%:', { formula: `G${totalsRowNum}-(E${totalsRowNum}*0.8)` }]);
+            // Add Delta to Goal row - using the efficiency goal from state
+            const goalPercent = Math.round(state.efficiencyGoal * 100);
+            const deltaRow = worksheet.addRow(['', '', '', '', `Delta to ${goalPercent}%:`, { formula: `G${totalsRowNum}-(E${totalsRowNum}*${state.efficiencyGoal})` }]);
             deltaRow.getCell(6).numFmt = '#,##0" RSF"';
             deltaRow.getCell(5).font = { bold: true };
             deltaRow.getCell(6).font = { bold: true };
             rowNum += 2;
             
-            // Add Parking Summary Section
-            const parkingSummaryHeader = worksheet.addRow(['PARKING SUMMARY']);
-            parkingSummaryHeader.getCell(1).font = { bold: true, size: 12 };
-            worksheet.mergeCells(`A${rowNum}:C${rowNum}`);
+            // Add Parking Summary Section - moved to column B
+            const parkingSummaryHeader = worksheet.addRow(['', 'PARKING SUMMARY']);
+            parkingSummaryHeader.getCell(2).font = { bold: true, size: 12 };
+            worksheet.mergeCells(`B${rowNum}:D${rowNum}`);
             rowNum++;
             
             // Calculate required parking based on method
@@ -1611,23 +1708,25 @@
                 requiredFormula = `${state.fixedParking}`;
             }
             
-            const providedRow = worksheet.addRow(['Parking Provided:', { formula: `K${totalsRowNum}` }]);
-            providedRow.getCell(2).numFmt = '#,##0" cars"';
+            // Use Actual Cars total (column J) or Calc Cars (column I) if no actuals
+            const providedRow = worksheet.addRow(['', 'Parking Provided:', { formula: `IF(J${totalsRowNum}>0,J${totalsRowNum},I${totalsRowNum})` }]);
+            providedRow.getCell(3).numFmt = '#,##0" cars"';
+            const providedRowNum = rowNum;
             rowNum++;
             
-            const requiredRow = worksheet.addRow(['Parking Required:', { formula: requiredFormula }]);
-            requiredRow.getCell(2).numFmt = '#,##0" cars"';
+            const requiredRow = worksheet.addRow(['', 'Parking Required:', { formula: requiredFormula }]);
+            requiredRow.getCell(3).numFmt = '#,##0" cars"';
             const requiredRowNum = rowNum;
             rowNum++;
             
-            const surplusRow = worksheet.addRow(['Surplus / (Deficit):', { formula: `B${requiredRowNum-1}-B${requiredRowNum}` }]);
-            surplusRow.getCell(2).numFmt = '#,##0" cars"';
-            surplusRow.getCell(2).font = { bold: true };
+            const surplusRow = worksheet.addRow(['', 'Surplus / (Deficit):', { formula: `C${providedRowNum}-C${requiredRowNum}` }]);
+            surplusRow.getCell(3).numFmt = '#,##0" cars"';
+            surplusRow.getCell(3).font = { bold: true };
             
             // Add assumptions note
             rowNum += 2;
-            const notesRow = worksheet.addRow([`SF per Car: ${state.sfPerCar} SF | Parking Method: ${state.parkingMethod} | Ratio: ${state.parkingRatio}`]);
-            notesRow.getCell(1).font = { italic: true, color: { argb: 'FF666666' } };
+            const notesRow = worksheet.addRow(['', `SF per Car: ${state.sfPerCar} SF | Parking Method: ${state.parkingMethod} | Ratio: ${state.parkingRatio}`]);
+            notesRow.getCell(2).font = { italic: true, color: { argb: 'FF666666' } };
             
             // Generate file
             const buffer = await workbook.xlsx.writeBuffer();
