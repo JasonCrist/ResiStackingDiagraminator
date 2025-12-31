@@ -465,6 +465,16 @@
 
         /* Row colors by use type */
         .preview-table tr.use-residential { background: #f0fdf4; }
+        .preview-table tr.use-residential.resi-shade-1 { background: #14532d; color: white; }
+        .preview-table tr.use-residential.resi-shade-2 { background: #166534; color: white; }
+        .preview-table tr.use-residential.resi-shade-3 { background: #15803d; color: white; }
+        .preview-table tr.use-residential.resi-shade-4 { background: #16a34a; color: white; }
+        .preview-table tr.use-residential.resi-shade-5 { background: #22c55e; }
+        .preview-table tr.use-residential.resi-shade-6 { background: #4ade80; }
+        .preview-table tr.use-residential.resi-shade-7 { background: #86efac; }
+        .preview-table tr.use-residential.resi-shade-8 { background: #bbf7d0; }
+        .preview-table tr.use-residential.resi-shade-9 { background: #dcfce7; }
+        .preview-table tr.use-residential.resi-shade-10 { background: #f0fdf4; }
         .preview-table tr.use-parking { background: #f9fafb; }
         .preview-table tr.use-parking.below-grade { background: #9ca3af; color: #1f2937; }
         .preview-table tr.use-retail { background: #eff6ff; }
@@ -473,6 +483,16 @@
         .preview-table tr.use-office { background: #ecfeff; }
 
         .preview-table tr.use-residential:hover { background: #dcfce7; }
+        .preview-table tr.use-residential.resi-shade-1:hover { background: #166534; }
+        .preview-table tr.use-residential.resi-shade-2:hover { background: #15803d; }
+        .preview-table tr.use-residential.resi-shade-3:hover { background: #16a34a; }
+        .preview-table tr.use-residential.resi-shade-4:hover { background: #22c55e; }
+        .preview-table tr.use-residential.resi-shade-5:hover { background: #4ade80; }
+        .preview-table tr.use-residential.resi-shade-6:hover { background: #86efac; }
+        .preview-table tr.use-residential.resi-shade-7:hover { background: #bbf7d0; }
+        .preview-table tr.use-residential.resi-shade-8:hover { background: #dcfce7; }
+        .preview-table tr.use-residential.resi-shade-9:hover { background: #f0fdf4; }
+        .preview-table tr.use-residential.resi-shade-10:hover { background: #f0fdf4; }
         .preview-table tr.use-parking:hover { background: #f3f4f6; }
         .preview-table tr.use-parking.below-grade:hover { background: #6b7280; }
         .preview-table tr.use-retail:hover { background: #dbeafe; }
@@ -964,6 +984,38 @@
 
         .additional-use-row .form-group:first-child {
             flex: 0 0 140px;
+        }
+
+        /* Add use row - full width dropdown at bottom */
+        .additional-use-add {
+            margin-top: 0.5rem;
+        }
+
+        .additional-use-add.first {
+            border-top: 1px dashed var(--border-color);
+            padding-top: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .additional-use-add .form-group {
+            margin-bottom: 0;
+        }
+
+        /* Full width add use dropdown */
+        .additional-use-add {
+            grid-column: 1 / -1;
+            margin-bottom: 0.5rem;
+        }
+
+        .additional-use-add.first {
+            border-top: 1px dashed var(--border-color);
+            padding-top: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .additional-use-add .form-group {
+            margin-bottom: 0;
+            max-width: 200px;
         }
 
         /* Compact floor type cards */
@@ -1489,56 +1541,52 @@
                     .map(au => `<span class="floor-type-badge ${au.use.toLowerCase()}" style="opacity: 0.7; font-size: 0.65rem;">+${au.use}</span>`)
                     .join('') : '';
                 
-                // Build additional uses HTML - dropdown based, side by side layout
+                // Build additional uses HTML - use+area side by side, add dropdown always at bottom
                 let additionalUsesHTML = '';
                 if (ft.additionalUses) {
-                    // Show dropdowns based on whether previous ones are filled
+                    // First show all enabled uses with their areas side by side
                     for (let i = 0; i < 4; i++) {
                         const au = ft.additionalUses[i] || { enabled: false, use: '', sf: 0, countsInGSF: true };
-                        const prevAu = i > 0 ? ft.additionalUses[i-1] : null;
                         
-                        // Show this dropdown if: first one OR previous one has a use selected
-                        const showDropdown = i === 0 || (prevAu && prevAu.enabled && prevAu.use);
-                        
-                        if (showDropdown) {
-                            if (au.enabled && au.use) {
-                                // Show use and area side by side
-                                additionalUsesHTML += `
-                                <div class="additional-use-row${i === 0 ? ' first' : ''}">
-                                    <div class="form-group">
-                                        <label>Additional Use</label>
-                                        <select onchange="selectAdditionalUse(${index}, ${i}, this.value)">
-                                            <option value="">— Remove —</option>
-                                            ${USE_TYPES.map(u => `<option value="${u}" ${au.use === u ? 'selected' : ''}>${u}</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Area</label>
-                                        <div class="sf-input-group">
-                                            <input type="number" value="${au.sf || ''}" placeholder="0" onchange="updateAdditionalUseSF(${index}, ${i}, this.value)">
-                                            <label class="checkbox-inline">
-                                                <input type="checkbox" ${au.countsInGSF ? 'checked' : ''} onchange="updateAdditionalUseGSF(${index}, ${i}, this.checked)">
-                                                <span>GSF</span>
-                                            </label>
-                                        </div>
+                        if (au.enabled && au.use) {
+                            additionalUsesHTML += `
+                            <div class="additional-use-row${i === 0 ? ' first' : ''}">
+                                <div class="form-group">
+                                    <label>Use</label>
+                                    <select onchange="selectAdditionalUse(${index}, ${i}, this.value)">
+                                        <option value="">— Remove —</option>
+                                        ${USE_TYPES.map(u => `<option value="${u}" ${au.use === u ? 'selected' : ''}>${u}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Area</label>
+                                    <div class="sf-input-group">
+                                        <input type="number" value="${au.sf || ''}" placeholder="0" onchange="updateAdditionalUseSF(${index}, ${i}, this.value)">
+                                        <label class="checkbox-inline">
+                                            <input type="checkbox" ${au.countsInGSF ? 'checked' : ''} onchange="updateAdditionalUseGSF(${index}, ${i}, this.checked)">
+                                            <span>GSF</span>
+                                        </label>
                                     </div>
                                 </div>
-                                `;
-                            } else {
-                                // Show empty dropdown to add new use
-                                additionalUsesHTML += `
-                                <div class="additional-use-row${i === 0 ? ' first' : ''}">
-                                    <div class="form-group">
-                                        <label>Additional Use</label>
-                                        <select onchange="selectAdditionalUse(${index}, ${i}, this.value)">
-                                            <option value="">— Add Use —</option>
-                                            ${USE_TYPES.map(u => `<option value="${u}">${u}</option>`).join('')}
-                                        </select>
-                                    </div>
-                                </div>
-                                `;
-                            }
+                            </div>
+                            `;
                         }
+                    }
+                    
+                    // Then show one "Add Use" dropdown at the bottom if there's room
+                    const enabledCount = ft.additionalUses.filter(au => au.enabled && au.use).length;
+                    if (enabledCount < 4) {
+                        additionalUsesHTML += `
+                        <div class="additional-use-add${enabledCount === 0 ? ' first' : ''}">
+                            <div class="form-group">
+                                <label>Additional Use</label>
+                                <select onchange="selectAdditionalUse(${index}, ${enabledCount}, this.value)">
+                                    <option value="">— Add Use —</option>
+                                    ${USE_TYPES.map(u => `<option value="${u}">${u}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        `;
                     }
                 }
                 
@@ -1577,7 +1625,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Number of Floors: ${floorCount}</label>
-                                <input type="range" min="1" max="50" value="${floorCount}" class="floor-slider" onchange="setFloorCount(${index}, parseInt(this.value))" oninput="this.previousElementSibling.textContent = 'Number of Floors: ' + this.value">
+                                <input type="range" min="1" max="20" value="${floorCount}" class="floor-slider" onchange="setFloorCount(${index}, parseInt(this.value))" oninput="this.previousElementSibling.textContent = 'Number of Floors: ' + this.value">
                             </div>
                             <div class="form-group">
                                 <label>Floor Range</label>
@@ -1772,9 +1820,16 @@
         function addFloorTypeAt(index, position) {
             const referenceType = state.floorTypes[index];
             
+            // Prompt user for the new floor type name
+            const defaultName = referenceType.name + ' (Copy)';
+            const newName = prompt('Enter name for the new floor type:', defaultName);
+            
+            // If user cancels, abort
+            if (newName === null) return;
+            
             // Create a copy of the reference floor type
             let newType = {
-                name: referenceType.name + ' (Copy)',
+                name: newName || defaultName,
                 use: referenceType.use,
                 startFloor: referenceType.startFloor,
                 endFloor: referenceType.startFloor, // Start with single floor
@@ -1880,6 +1935,24 @@
             // Sort floors from top to bottom (roof to basement)
             allFloors.sort((a, b) => b.sortOrder - a.sortOrder);
             
+            // Get unique residential floor TYPES in order (top to bottom)
+            const resiFloorTypes = [];
+            allFloors.forEach(f => {
+                if (f.use === 'Residential' && !resiFloorTypes.includes(f.typeName)) {
+                    resiFloorTypes.push(f.typeName);
+                }
+            });
+            
+            // Create shade map by floor type name (1 = darkest/lowest type, up to 10)
+            const resiTypeShadeMap = {};
+            const typeCount = resiFloorTypes.length;
+            resiFloorTypes.forEach((typeName, idx) => {
+                // idx 0 = top type (lightest), last = bottom type (darkest)
+                const position = typeCount - idx; // 1 = bottom type, typeCount = top type
+                const shade = Math.min(10, Math.max(1, Math.ceil(position / typeCount * 10)));
+                resiTypeShadeMap[typeName] = shade;
+            });
+            
             let totalFloors = 0;
             let totalHeight = 0;
             let totalGSF = 0;
@@ -1975,7 +2048,8 @@
                 }
                 
                 const isBelowGrade = floor.label.toUpperCase().startsWith('B');
-                const rowClasses = `use-${floor.use.toLowerCase()}${isBelowGrade ? ' below-grade' : ''}`;
+                const resiShade = floor.use === 'Residential' && resiTypeShadeMap[floor.typeName] ? ` resi-shade-${resiTypeShadeMap[floor.typeName]}` : '';
+                const rowClasses = `use-${floor.use.toLowerCase()}${isBelowGrade ? ' below-grade' : ''}${resiShade}`;
                 
                 html += `
                     <tr class="${rowClasses}">
@@ -2383,7 +2457,6 @@
             let rowNum = firstDataRow;
             
             const useColors = {
-                'Residential': 'FFF0FDF4',
                 'Parking': 'FFD1D5DB',
                 'Retail': 'FFEFF6FF',
                 'Amenity': 'FFFAF5FF',
@@ -2391,6 +2464,38 @@
                 'Office': 'FFECFEFF'
             };
             const belowGradeColor = 'FF9CA3AF';
+            
+            // Residential gradient colors (10 shades, 1 = darkest/lowest, 10 = lightest/highest)
+            const resiGradient = {
+                1: 'FF14532D',  // darkest green
+                2: 'FF166534',
+                3: 'FF15803D',
+                4: 'FF16A34A',
+                5: 'FF22C55E',
+                6: 'FF4ADE80',
+                7: 'FF86EFAC',
+                8: 'FFBBF7D0',
+                9: 'FFDCFCE7',
+                10: 'FFF0FDF4'  // lightest green
+            };
+            
+            // Get unique residential floor TYPES in order (top to bottom)
+            const resiFloorTypes = [];
+            allFloors.forEach(f => {
+                if (f.use === 'Residential' && !resiFloorTypes.includes(f.typeName)) {
+                    resiFloorTypes.push(f.typeName);
+                }
+            });
+            
+            // Create shade map by floor type name
+            const resiTypeShadeMap = {};
+            const typeCount = resiFloorTypes.length;
+            resiFloorTypes.forEach((typeName, idx) => {
+                // idx 0 = top type (lightest), last = bottom type (darkest)
+                const position = typeCount - idx;
+                const shade = Math.min(10, Math.max(1, Math.ceil(position / typeCount * 10)));
+                resiTypeShadeMap[typeName] = shade;
+            });
             
             // Column indices for use types
             const useColMap = { 'Residential': 4, 'Amenity': 5, 'Parking': 6, 'Mechanical': 7, 'Retail': 8, 'Office': 7 };
@@ -2449,9 +2554,26 @@
                     floor.actualCars || ''
                 ]);
                 
-                const rowColor = isBelowGrade ? belowGradeColor : (useColors[floor.use] || 'FFFFFFFF');
+                // Determine row color - residential gets gradient by TYPE, others use static colors
+                let rowColor;
+                if (isBelowGrade) {
+                    rowColor = belowGradeColor;
+                } else if (floor.use === 'Residential' && resiTypeShadeMap[floor.typeName]) {
+                    rowColor = resiGradient[resiTypeShadeMap[floor.typeName]];
+                } else {
+                    rowColor = useColors[floor.use] || 'FFFFFFFF';
+                }
+                
+                // Text color for dark backgrounds
+                const darkShades = [1, 2, 3, 4];
+                const needsWhiteText = floor.use === 'Residential' && resiTypeShadeMap[floor.typeName] && darkShades.includes(resiTypeShadeMap[floor.typeName]);
+                
                 row.eachCell((cell) => {
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowColor } };
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    if (needsWhiteText) {
+                        cell.font = { color: { argb: 'FFFFFFFF' } };
+                    }
                 });
                 
                 // Format cells
@@ -2493,6 +2615,7 @@
             
             totalsRow.eachCell((cell, colNumber) => {
                 Object.assign(cell, totalStyle);
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 if (colNumber === 1) cell.numFmt = '0.00" ft"';
                 if (colNumber === 3) cell.numFmt = '#,##0" SF"';
                 if (colNumber >= 4 && colNumber <= 8) cell.numFmt = '#,##0';
@@ -2512,19 +2635,24 @@
             const effRow = worksheet.addRow(['', '', '', '', '', '', '', '', 'Overall Efficiency:', { formula: `IF(I${totalsRowNum}>0,K${totalsRowNum}/I${totalsRowNum},0)` }]);
             effRow.getCell(10).numFmt = '0.0%';
             effRow.getCell(9).font = { bold: true };
+            effRow.getCell(9).alignment = { horizontal: 'right' };
             effRow.getCell(10).font = { bold: true };
+            effRow.getCell(10).alignment = { horizontal: 'center' };
             rowNum++;
             
             const goalPercent = Math.round(state.efficiencyGoal * 100);
             const deltaRow = worksheet.addRow(['', '', '', '', '', '', '', '', `Delta to ${goalPercent}%:`, { formula: `K${totalsRowNum}-(I${totalsRowNum}*${state.efficiencyGoal})` }]);
             deltaRow.getCell(10).numFmt = '#,##0" RSF"';
             deltaRow.getCell(9).font = { bold: true };
+            deltaRow.getCell(9).alignment = { horizontal: 'right' };
             deltaRow.getCell(10).font = { bold: true };
+            deltaRow.getCell(10).alignment = { horizontal: 'center' };
             rowNum += 2;
             
             // Parking Summary
             const parkingSummaryHeader = worksheet.addRow(['', 'PARKING SUMMARY']);
             parkingSummaryHeader.getCell(2).font = { bold: true, size: 12 };
+            parkingSummaryHeader.getCell(2).alignment = { horizontal: 'left' };
             worksheet.mergeCells(`B${rowNum}:D${rowNum}`);
             rowNum++;
             
@@ -2537,23 +2665,30 @@
                 requiredFormula = `${state.fixedParking}`;
             }
             
-            const providedRow = worksheet.addRow(['', 'Parking Provided:', { formula: `IF(M${totalsRowNum}>0,M${totalsRowNum},L${totalsRowNum})` }]);
-            providedRow.getCell(3).numFmt = '#,##0" cars"';
+            const providedRow = worksheet.addRow(['', 'Parking Provided:', '', { formula: `IF(M${totalsRowNum}>0,M${totalsRowNum},L${totalsRowNum})` }]);
+            providedRow.getCell(2).alignment = { horizontal: 'left' };
+            providedRow.getCell(4).numFmt = '#,##0" cars"';
+            providedRow.getCell(4).alignment = { horizontal: 'left' };
             const providedRowNum = rowNum;
             rowNum++;
             
-            const requiredRow = worksheet.addRow(['', 'Parking Required:', { formula: requiredFormula }]);
-            requiredRow.getCell(3).numFmt = '#,##0" cars"';
+            const requiredRow = worksheet.addRow(['', 'Parking Required:', '', { formula: requiredFormula }]);
+            requiredRow.getCell(2).alignment = { horizontal: 'left' };
+            requiredRow.getCell(4).numFmt = '#,##0" cars"';
+            requiredRow.getCell(4).alignment = { horizontal: 'left' };
             const requiredRowNum = rowNum;
             rowNum++;
             
-            const surplusRow = worksheet.addRow(['', 'Surplus / (Deficit):', { formula: `C${providedRowNum}-C${requiredRowNum}` }]);
-            surplusRow.getCell(3).numFmt = '#,##0" cars"';
-            surplusRow.getCell(3).font = { bold: true };
+            const surplusRow = worksheet.addRow(['', 'Surplus / (Deficit):', '', { formula: `D${providedRowNum}-D${requiredRowNum}` }]);
+            surplusRow.getCell(2).alignment = { horizontal: 'left' };
+            surplusRow.getCell(4).numFmt = '#,##0" cars"';
+            surplusRow.getCell(4).font = { bold: true };
+            surplusRow.getCell(4).alignment = { horizontal: 'left' };
             
             rowNum += 2;
             const notesRow = worksheet.addRow(['', `SF per Car: ${state.sfPerCar} SF | Parking Method: ${state.parkingMethod} | Ratio: ${state.parkingRatio}`]);
             notesRow.getCell(2).font = { italic: true, color: { argb: 'FF666666' } };
+            notesRow.getCell(2).alignment = { horizontal: 'left' };
             
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
