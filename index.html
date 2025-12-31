@@ -1864,7 +1864,18 @@
         // ============================================
 
         function toggleFloorType(index) {
-            state.floorTypes[index].expanded = !state.floorTypes[index].expanded;
+            const wasExpanded = state.floorTypes[index].expanded;
+            
+            // Collapse all floor types first
+            state.floorTypes.forEach((ft, i) => {
+                ft.expanded = false;
+            });
+            
+            // If it wasn't expanded, expand it now
+            if (!wasExpanded) {
+                state.floorTypes[index].expanded = true;
+            }
+            
             renderFloorTypes();
         }
 
@@ -2243,11 +2254,11 @@
                     au3 ? (au3.sf || '') : '',
                     au4 ? au4.use : '',
                     au4 ? (au4.sf || '') : '',
-                    floorGSF > 0 ? floorGSF : '',
-                    floorConstructionGSF,
+                    '', // GSF - formula
+                    '', // Construction GSF - formula
                     floor.use === 'Residential' ? efficiency : '',
                     '', // RSF - formula
-                    parkingSF > 0 ? parkingSF : '',
+                    '', // Parking SF - formula
                     '', // Calc Cars - formula
                     floor.actualCars || ''  // Actual Cars Drawn
                 ]);
@@ -2274,10 +2285,25 @@
                 row.getCell(11).numFmt = '#,##0';
                 row.getCell(13).numFmt = '#,##0';
                 
-                // Format GSF (col 14)
+                // GSF Formula (col 14) - sum only checked items
+                let gsfFormulaParts = [];
+                if (floor.countsInGSF) gsfFormulaParts.push(`E${rowNum}`);
+                if (au1 && au1.countsInGSF && au1.sf > 0) gsfFormulaParts.push(`G${rowNum}`);
+                if (au2 && au2.countsInGSF && au2.sf > 0) gsfFormulaParts.push(`I${rowNum}`);
+                if (au3 && au3.countsInGSF && au3.sf > 0) gsfFormulaParts.push(`K${rowNum}`);
+                if (au4 && au4.countsInGSF && au4.sf > 0) gsfFormulaParts.push(`M${rowNum}`);
+                if (gsfFormulaParts.length > 0) {
+                    row.getCell(14).value = { formula: gsfFormulaParts.join('+') };
+                }
                 row.getCell(14).numFmt = '#,##0';
                 
-                // Format Construction GSF (col 15)
+                // Construction GSF Formula (col 15) - sum ALL area columns
+                let constrGsfParts = [`E${rowNum}`];
+                if (au1 && au1.sf > 0) constrGsfParts.push(`G${rowNum}`);
+                if (au2 && au2.sf > 0) constrGsfParts.push(`I${rowNum}`);
+                if (au3 && au3.sf > 0) constrGsfParts.push(`K${rowNum}`);
+                if (au4 && au4.sf > 0) constrGsfParts.push(`M${rowNum}`);
+                row.getCell(15).value = { formula: constrGsfParts.join('+') };
                 row.getCell(15).numFmt = '#,##0';
                 
                 // Format Efficiency as percentage (col 16)
@@ -2307,7 +2333,16 @@
                 }
                 row.getCell(17).numFmt = '#,##0';
                 
-                // Parking SF format (col 18)
+                // Parking SF Formula (col 18) - sum of all parking areas
+                let parkingFormulaParts = [];
+                if (floor.use === 'Parking') parkingFormulaParts.push(`E${rowNum}`);
+                if (au1 && au1.use === 'Parking' && au1.sf > 0) parkingFormulaParts.push(`G${rowNum}`);
+                if (au2 && au2.use === 'Parking' && au2.sf > 0) parkingFormulaParts.push(`I${rowNum}`);
+                if (au3 && au3.use === 'Parking' && au3.sf > 0) parkingFormulaParts.push(`K${rowNum}`);
+                if (au4 && au4.use === 'Parking' && au4.sf > 0) parkingFormulaParts.push(`M${rowNum}`);
+                if (parkingFormulaParts.length > 0) {
+                    row.getCell(18).value = { formula: parkingFormulaParts.join('+') };
+                }
                 row.getCell(18).numFmt = '#,##0';
                 
                 // Calc Cars Formula (col 19)
