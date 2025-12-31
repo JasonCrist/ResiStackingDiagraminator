@@ -943,6 +943,87 @@
         .checkbox-inline span {
             font-weight: 500;
         }
+
+        /* Additional use row - side by side layout */
+        .additional-use-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .additional-use-row.first {
+            border-top: 1px dashed var(--border-color);
+            padding-top: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .additional-use-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .additional-use-row .form-group:first-child {
+            flex: 0 0 140px;
+        }
+
+        /* Compact floor type cards */
+        .floor-type-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .floor-type-body {
+            padding: 0.75rem;
+            border-top: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .floor-type-card.expanded .floor-type-body {
+            display: block;
+        }
+
+        .floor-type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+
+        .floor-type-grid .form-group {
+            margin-bottom: 0;
+        }
+
+        .floor-type-grid .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .floor-type-grid label {
+            font-size: 0.7rem;
+            margin-bottom: 0.15rem;
+        }
+
+        .floor-type-grid input,
+        .floor-type-grid select {
+            padding: 0.35rem 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        /* Floor count slider */
+        .floor-slider {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+        }
+
+        .count-display.compact {
+            padding: 0.35rem 0.5rem;
+            font-size: 0.85rem;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -1408,7 +1489,7 @@
                     .map(au => `<span class="floor-type-badge ${au.use.toLowerCase()}" style="opacity: 0.7; font-size: 0.65rem;">+${au.use}</span>`)
                     .join('') : '';
                 
-                // Build additional uses HTML - dropdown based
+                // Build additional uses HTML - dropdown based, side by side layout
                 let additionalUsesHTML = '';
                 if (ft.additionalUses) {
                     // Show dropdowns based on whether previous ones are filled
@@ -1420,27 +1501,39 @@
                         const showDropdown = i === 0 || (prevAu && prevAu.enabled && prevAu.use);
                         
                         if (showDropdown) {
-                            additionalUsesHTML += `
-                            <div class="form-group${i === 0 ? ' full-width' : ''}" style="${i === 0 ? 'border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 0.5rem;' : ''}">
-                                <label>Additional Use${au.enabled ? '' : ' (optional)'}</label>
-                                <select onchange="selectAdditionalUse(${index}, ${i}, this.value)">
-                                    <option value="">— Select Use —</option>
-                                    ${USE_TYPES.map(u => `<option value="${u}" ${au.use === u ? 'selected' : ''}>${u}</option>`).join('')}
-                                </select>
-                            </div>
-                            `;
-                            
-                            // Show SF input if use is selected
                             if (au.enabled && au.use) {
+                                // Show use and area side by side
                                 additionalUsesHTML += `
-                                <div class="form-group">
-                                    <label>Area per Floor</label>
-                                    <div class="sf-input-group">
-                                        <input type="number" value="${au.sf || ''}" placeholder="0" onchange="updateAdditionalUseSF(${index}, ${i}, this.value)">
-                                        <label class="checkbox-inline">
-                                            <input type="checkbox" ${au.countsInGSF ? 'checked' : ''} onchange="updateAdditionalUseGSF(${index}, ${i}, this.checked)">
-                                            <span>GSF</span>
-                                        </label>
+                                <div class="additional-use-row${i === 0 ? ' first' : ''}">
+                                    <div class="form-group">
+                                        <label>Additional Use</label>
+                                        <select onchange="selectAdditionalUse(${index}, ${i}, this.value)">
+                                            <option value="">— Remove —</option>
+                                            ${USE_TYPES.map(u => `<option value="${u}" ${au.use === u ? 'selected' : ''}>${u}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Area</label>
+                                        <div class="sf-input-group">
+                                            <input type="number" value="${au.sf || ''}" placeholder="0" onchange="updateAdditionalUseSF(${index}, ${i}, this.value)">
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" ${au.countsInGSF ? 'checked' : ''} onchange="updateAdditionalUseGSF(${index}, ${i}, this.checked)">
+                                                <span>GSF</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                `;
+                            } else {
+                                // Show empty dropdown to add new use
+                                additionalUsesHTML += `
+                                <div class="additional-use-row${i === 0 ? ' first' : ''}">
+                                    <div class="form-group">
+                                        <label>Additional Use</label>
+                                        <select onchange="selectAdditionalUse(${index}, ${i}, this.value)">
+                                            <option value="">— Add Use —</option>
+                                            ${USE_TYPES.map(u => `<option value="${u}">${u}</option>`).join('')}
+                                        </select>
                                     </div>
                                 </div>
                                 `;
@@ -1483,16 +1576,12 @@
                                 <input type="text" value="${ft.name}" onchange="updateFloorTypeField(${index}, 'name', this.value)">
                             </div>
                             <div class="form-group">
-                                <label>Number of Floors</label>
-                                <div class="floor-count-adjuster">
-                                    <button onclick="adjustFloorCount(${index}, -1)">−</button>
-                                    <div class="count-display">${floorCount} floor${floorCount !== 1 ? 's' : ''}</div>
-                                    <button onclick="adjustFloorCount(${index}, 1)">+</button>
-                                </div>
+                                <label>Number of Floors: ${floorCount}</label>
+                                <input type="range" min="1" max="50" value="${floorCount}" class="floor-slider" onchange="setFloorCount(${index}, parseInt(this.value))" oninput="this.previousElementSibling.textContent = 'Number of Floors: ' + this.value">
                             </div>
                             <div class="form-group">
                                 <label>Floor Range</label>
-                                <div class="count-display" style="text-align: left; padding: 0.5rem;">${ft.startFloor} → ${ft.endFloor}</div>
+                                <div class="count-display compact">${ft.startFloor} → ${ft.endFloor}</div>
                             </div>
                             <div class="form-group">
                                 <label>Area per Floor</label>
@@ -1599,6 +1688,35 @@
             }
             
             // Re-sort and renumber all floors after this one
+            autoRenumberFloors();
+            renderFloorTypes();
+            updatePreview();
+        }
+
+        // Set floor count directly (from slider)
+        function setFloorCount(index, newCount) {
+            const ft = state.floorTypes[index];
+            const isBelowGrade = ft.startFloor.toUpperCase().startsWith('B');
+            const isPLevel = ft.isPLevel || ft.startFloor.toUpperCase().startsWith('P');
+            const isGround = ['G', 'GROUND', 'GF'].includes(ft.startFloor.toUpperCase());
+            
+            if (isGround || newCount < 1) return;
+            
+            if (isBelowGrade) {
+                const startB = parseInt(ft.startFloor.match(/\d+/)?.[0]) || 1;
+                ft.endFloor = formatBLevel(startB + newCount - 1);
+            } else if (isPLevel) {
+                const startP = parseInt(ft.startFloor.match(/\d+/)?.[0]) || 2;
+                let newEndP = startP + newCount - 1;
+                if (state.skip13 && startP <= 13 && newEndP >= 13) newEndP++;
+                ft.endFloor = formatPLevel(newEndP);
+            } else {
+                const startFloorNum = parseInt(ft.startFloor.match(/\d+/)?.[0]) || 2;
+                let newEndNum = startFloorNum + newCount - 1;
+                if (state.skip13 && startFloorNum <= 13 && newEndNum >= 13) newEndNum++;
+                ft.endFloor = formatFloorNumber(newEndNum);
+            }
+            
             autoRenumberFloors();
             renderFloorTypes();
             updatePreview();
@@ -2155,8 +2273,8 @@
 
         function getDefaultFloorTypes() {
             return [
-                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B02', endFloor: 'B02', gsf: 10000, height: "10' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
                 { name: 'Below Grade Parking - Van Accessible', use: 'Parking', startFloor: 'B01', endFloor: 'B01', gsf: 10000, height: "11' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B02', endFloor: 'B02', gsf: 10000, height: "10' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
                 { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 10000, height: "18' 0\"", countsInGSF: true, expanded: false, additionalUses: getDefaultAdditionalUses() },
                 { name: 'P02 - Van Accessible', use: 'Parking', startFloor: 'P02', endFloor: 'P02', gsf: 10000, height: "11' 0\"", countsInGSF: false, expanded: false, isPLevel: true, additionalUses: getDefaultAdditionalUses() },
                 { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P03', endFloor: 'P03', gsf: 10000, height: "9' 8\"", countsInGSF: false, expanded: false, isPLevel: true, additionalUses: getDefaultAdditionalUses() },
@@ -2201,29 +2319,25 @@
             };
             
             // Add project header section
-            // Row 1: Project Name
-            worksheet.mergeCells('A1:T1');
+            worksheet.mergeCells('A1:M1');
             const titleCell = worksheet.getCell('A1');
             titleCell.value = state.projectName;
             titleCell.font = { bold: true, size: 16 };
             titleCell.alignment = { horizontal: 'left' };
             
-            // Row 2: City, State
-            worksheet.mergeCells('A2:T2');
+            worksheet.mergeCells('A2:M2');
             const cityCell = worksheet.getCell('A2');
             cityCell.value = state.projectCity;
             cityCell.font = { size: 12 };
             cityCell.alignment = { horizontal: 'left' };
             
-            // Row 3: Project Number
-            worksheet.mergeCells('A3:T3');
+            worksheet.mergeCells('A3:M3');
             const projectNumCell = worksheet.getCell('A3');
             projectNumCell.value = `HKS Project# ${state.projectNumber}`;
             projectNumCell.font = { size: 11 };
             projectNumCell.alignment = { horizontal: 'left' };
             
-            // Row 4: Date
-            worksheet.mergeCells('A4:T4');
+            worksheet.mergeCells('A4:M4');
             const dateCell = worksheet.getCell('A4');
             const today = new Date();
             const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -2231,305 +2345,199 @@
             dateCell.font = { size: 11, italic: true };
             dateCell.alignment = { horizontal: 'left' };
             
-            // Row 5: Blank
             worksheet.addRow([]);
             
-            // Row 6: Column headers
+            // New column order: Height, Floor, Constr GSF, Resi, Amenity, Parking, BOH/Mech, Retail, GSF, Efficiency, RSF, Calc Cars, Actual Cars
             const headers = [
-                'Floor', 'Type', 'Use', 'Height', 'Area',
-                'Additional Use 1', 'Additional Use 1 Area',
-                'Additional Use 2', 'Additional Use 2 Area',
-                'Additional Use 3', 'Additional Use 3 Area',
-                'Additional Use 4', 'Additional Use 4 Area',
-                'GSF', 'Construction GSF', 'Efficiency', 'RSF', 
-                'Parking SF', 'Calc Cars', 'Actual Cars Drawn'
+                'Height', 'Floor', 'Construction GSF', 
+                'Residential', 'Amenity', 'Parking', 'BOH/Mechanical', 'Retail',
+                'GSF', 'Efficiency', 'RSF', 'Calc Cars', 'Actual Cars Drawn'
             ];
             worksheet.getRow(6).values = headers;
             worksheet.getRow(6).eachCell((cell) => {
                 Object.assign(cell, headerStyle);
             });
             
-            // Row 7: Blank row after header
             worksheet.addRow([]);
             
-            // Set column widths
             worksheet.columns = [
-                { width: 10 },  // Floor
-                { width: 25 },  // Type
-                { width: 12 },  // Use
                 { width: 12 },  // Height
-                { width: 14 },  // Area
-                { width: 16 },  // Additional Use 1
-                { width: 16 },  // Additional Use 1 Area
-                { width: 16 },  // Additional Use 2
-                { width: 16 },  // Additional Use 2 Area
-                { width: 16 },  // Additional Use 3
-                { width: 16 },  // Additional Use 3 Area
-                { width: 16 },  // Additional Use 4
-                { width: 16 },  // Additional Use 4 Area
+                { width: 10 },  // Floor
+                { width: 16 },  // Construction GSF
+                { width: 14 },  // Residential
+                { width: 12 },  // Amenity
+                { width: 12 },  // Parking
+                { width: 14 },  // BOH/Mechanical
+                { width: 12 },  // Retail
                 { width: 12 },  // GSF
-                { width: 14 },  // Construction GSF
                 { width: 12 },  // Efficiency
                 { width: 12 },  // RSF
-                { width: 12 },  // Parking SF
                 { width: 12 },  // Calc Cars
                 { width: 16 }   // Actual Cars Drawn
             ];
             
-            // Generate floor data
             const allFloors = generateAllFloors();
             allFloors.sort((a, b) => b.sortOrder - a.sortOrder);
             
-            const firstDataRow = 8; // Row 8 because of header section
+            const firstDataRow = 8;
             let rowNum = firstDataRow;
             
-            // Use color mapping
             const useColors = {
                 'Residential': 'FFF0FDF4',
-                'Parking': 'FFD1D5DB',      // Darker gray for parking
+                'Parking': 'FFD1D5DB',
                 'Retail': 'FFEFF6FF',
                 'Amenity': 'FFFAF5FF',
                 'Mechanical': 'FFFFF7ED',
                 'Office': 'FFECFEFF'
             };
-            
-            // Below grade gets even darker gray
             const belowGradeColor = 'FF9CA3AF';
             
-            allFloors.forEach((floor, index) => {
+            // Column indices for use types
+            const useColMap = { 'Residential': 4, 'Amenity': 5, 'Parking': 6, 'Mechanical': 7, 'Retail': 8, 'Office': 7 };
+            
+            allFloors.forEach((floor) => {
                 const height = feetInchesToDecimal(floor.height);
-                const efficiency = floor.use === 'Residential' ? state.efficiency : 0;
+                const efficiency = state.efficiency;
                 
-                // Get additional uses data
-                const au1 = floor.additionalUses && floor.additionalUses[0] && floor.additionalUses[0].enabled ? floor.additionalUses[0] : null;
-                const au2 = floor.additionalUses && floor.additionalUses[1] && floor.additionalUses[1].enabled ? floor.additionalUses[1] : null;
-                const au3 = floor.additionalUses && floor.additionalUses[2] && floor.additionalUses[2].enabled ? floor.additionalUses[2] : null;
-                const au4 = floor.additionalUses && floor.additionalUses[3] && floor.additionalUses[3].enabled ? floor.additionalUses[3] : null;
+                // Aggregate SF by use type
+                const sfByUse = { Residential: 0, Amenity: 0, Parking: 0, Mechanical: 0, Retail: 0 };
+                const gsfByUse = { Residential: 0, Amenity: 0, Parking: 0, Mechanical: 0, Retail: 0 };
                 
-                // Calculate GSF (only checked items)
-                let floorGSF = floor.countsInGSF ? floor.gsf : 0;
-                if (au1 && au1.countsInGSF) floorGSF += au1.sf || 0;
-                if (au2 && au2.countsInGSF) floorGSF += au2.sf || 0;
-                if (au3 && au3.countsInGSF) floorGSF += au3.sf || 0;
-                if (au4 && au4.countsInGSF) floorGSF += au4.sf || 0;
+                // Primary use
+                const primaryUse = floor.use === 'Office' ? 'Mechanical' : floor.use;
+                if (sfByUse.hasOwnProperty(primaryUse)) {
+                    sfByUse[primaryUse] += floor.gsf;
+                    if (floor.countsInGSF) gsfByUse[primaryUse] += floor.gsf;
+                }
                 
-                // Calculate Construction GSF (ALL items)
-                let floorConstructionGSF = floor.gsf;
-                if (au1) floorConstructionGSF += au1.sf || 0;
-                if (au2) floorConstructionGSF += au2.sf || 0;
-                if (au3) floorConstructionGSF += au3.sf || 0;
-                if (au4) floorConstructionGSF += au4.sf || 0;
+                // Additional uses
+                if (floor.additionalUses) {
+                    floor.additionalUses.forEach(au => {
+                        if (au.enabled && au.use && au.sf > 0) {
+                            const auUse = au.use === 'Office' ? 'Mechanical' : au.use;
+                            if (sfByUse.hasOwnProperty(auUse)) {
+                                sfByUse[auUse] += au.sf;
+                                if (au.countsInGSF) gsfByUse[auUse] += au.sf;
+                            }
+                        }
+                    });
+                }
                 
-                // Calculate parking SF (from primary and additional)
-                let parkingSF = 0;
-                if (floor.use === 'Parking') parkingSF = floor.gsf;
-                if (au1 && au1.use === 'Parking') parkingSF += au1.sf || 0;
-                if (au2 && au2.use === 'Parking') parkingSF += au2.sf || 0;
-                if (au3 && au3.use === 'Parking') parkingSF += au3.sf || 0;
-                if (au4 && au4.use === 'Parking') parkingSF += au4.sf || 0;
+                // Calculate totals
+                const constructionGSF = Object.values(sfByUse).reduce((a, b) => a + b, 0);
+                const gsf = Object.values(gsfByUse).reduce((a, b) => a + b, 0);
+                const resiGSF = gsfByUse.Residential;
+                const rsf = Math.round(resiGSF * efficiency);
+                const parkingSF = sfByUse.Parking;
+                const calcCars = parkingSF > 0 ? Math.floor(parkingSF / state.sfPerCar) : 0;
                 
                 const isBelowGrade = floor.label.toUpperCase().startsWith('B');
                 
                 const row = worksheet.addRow([
-                    floor.label,
-                    floor.typeName,
-                    floor.use,
                     height,
-                    floor.gsf,
-                    au1 ? au1.use : '',
-                    au1 ? (au1.sf || '') : '',
-                    au2 ? au2.use : '',
-                    au2 ? (au2.sf || '') : '',
-                    au3 ? au3.use : '',
-                    au3 ? (au3.sf || '') : '',
-                    au4 ? au4.use : '',
-                    au4 ? (au4.sf || '') : '',
-                    '', // GSF - formula
-                    '', // Construction GSF - formula
-                    floor.use === 'Residential' ? efficiency : '',
-                    '', // RSF - formula
-                    '', // Parking SF - formula
-                    '', // Calc Cars - formula
-                    floor.actualCars || ''  // Actual Cars Drawn
+                    floor.label,
+                    constructionGSF,
+                    sfByUse.Residential || '',
+                    sfByUse.Amenity || '',
+                    sfByUse.Parking || '',
+                    sfByUse.Mechanical || '',
+                    sfByUse.Retail || '',
+                    gsf || '',
+                    resiGSF > 0 ? efficiency : '',
+                    rsf || '',
+                    calcCars || '',
+                    floor.actualCars || ''
                 ]);
                 
-                // Apply row color based on use type (darker for below grade)
                 const rowColor = isBelowGrade ? belowGradeColor : (useColors[floor.use] || 'FFFFFFFF');
                 row.eachCell((cell) => {
-                    cell.fill = {
-                        type: 'pattern',
-                        pattern: 'solid',
-                        fgColor: { argb: rowColor }
-                    };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowColor } };
                 });
                 
-                // Format height as feet-inches (col 4)
-                row.getCell(4).numFmt = '0.00" ft"';
-                
-                // Format Area (col 5)
+                // Format cells
+                row.getCell(1).numFmt = '0.00" ft"';
+                row.getCell(3).numFmt = '#,##0';
+                row.getCell(4).numFmt = '#,##0';
                 row.getCell(5).numFmt = '#,##0';
-                
-                // Format Additional Use Areas (cols 7, 9, 11, 13)
+                row.getCell(6).numFmt = '#,##0';
                 row.getCell(7).numFmt = '#,##0';
+                row.getCell(8).numFmt = '#,##0';
                 row.getCell(9).numFmt = '#,##0';
+                if (resiGSF > 0) row.getCell(10).numFmt = '0%';
                 row.getCell(11).numFmt = '#,##0';
-                row.getCell(13).numFmt = '#,##0';
-                
-                // GSF Formula (col 14) - sum only checked items
-                let gsfFormulaParts = [];
-                if (floor.countsInGSF) gsfFormulaParts.push(`E${rowNum}`);
-                if (au1 && au1.countsInGSF && au1.sf > 0) gsfFormulaParts.push(`G${rowNum}`);
-                if (au2 && au2.countsInGSF && au2.sf > 0) gsfFormulaParts.push(`I${rowNum}`);
-                if (au3 && au3.countsInGSF && au3.sf > 0) gsfFormulaParts.push(`K${rowNum}`);
-                if (au4 && au4.countsInGSF && au4.sf > 0) gsfFormulaParts.push(`M${rowNum}`);
-                if (gsfFormulaParts.length > 0) {
-                    row.getCell(14).value = { formula: gsfFormulaParts.join('+') };
-                }
-                row.getCell(14).numFmt = '#,##0';
-                
-                // Construction GSF Formula (col 15) - sum ALL area columns
-                let constrGsfParts = [`E${rowNum}`];
-                if (au1 && au1.sf > 0) constrGsfParts.push(`G${rowNum}`);
-                if (au2 && au2.sf > 0) constrGsfParts.push(`I${rowNum}`);
-                if (au3 && au3.sf > 0) constrGsfParts.push(`K${rowNum}`);
-                if (au4 && au4.sf > 0) constrGsfParts.push(`M${rowNum}`);
-                row.getCell(15).value = { formula: constrGsfParts.join('+') };
-                row.getCell(15).numFmt = '#,##0';
-                
-                // Format Efficiency as percentage (col 16)
-                if (floor.use === 'Residential') {
-                    row.getCell(16).numFmt = '0%';
-                }
-                
-                // RSF Formula (col 17) - sum of all residential areas * efficiency
-                let rsfFormulaParts = [];
-                if (floor.use === 'Residential' && floor.countsInGSF) {
-                    rsfFormulaParts.push(`E${rowNum}`);
-                }
-                if (au1 && au1.use === 'Residential' && au1.countsInGSF && au1.sf > 0) {
-                    rsfFormulaParts.push(`G${rowNum}`);
-                }
-                if (au2 && au2.use === 'Residential' && au2.countsInGSF && au2.sf > 0) {
-                    rsfFormulaParts.push(`I${rowNum}`);
-                }
-                if (au3 && au3.use === 'Residential' && au3.countsInGSF && au3.sf > 0) {
-                    rsfFormulaParts.push(`K${rowNum}`);
-                }
-                if (au4 && au4.use === 'Residential' && au4.countsInGSF && au4.sf > 0) {
-                    rsfFormulaParts.push(`M${rowNum}`);
-                }
-                if (rsfFormulaParts.length > 0) {
-                    row.getCell(17).value = { formula: `(${rsfFormulaParts.join('+')})*P${rowNum}` };
-                }
-                row.getCell(17).numFmt = '#,##0';
-                
-                // Parking SF Formula (col 18) - sum of all parking areas
-                let parkingFormulaParts = [];
-                if (floor.use === 'Parking') parkingFormulaParts.push(`E${rowNum}`);
-                if (au1 && au1.use === 'Parking' && au1.sf > 0) parkingFormulaParts.push(`G${rowNum}`);
-                if (au2 && au2.use === 'Parking' && au2.sf > 0) parkingFormulaParts.push(`I${rowNum}`);
-                if (au3 && au3.use === 'Parking' && au3.sf > 0) parkingFormulaParts.push(`K${rowNum}`);
-                if (au4 && au4.use === 'Parking' && au4.sf > 0) parkingFormulaParts.push(`M${rowNum}`);
-                if (parkingFormulaParts.length > 0) {
-                    row.getCell(18).value = { formula: parkingFormulaParts.join('+') };
-                }
-                row.getCell(18).numFmt = '#,##0';
-                
-                // Calc Cars Formula (col 19)
-                if (parkingSF > 0) {
-                    row.getCell(19).value = { formula: `IF(R${rowNum}>0,INT(R${rowNum}/${state.sfPerCar}),"")` };
-                }
                 
                 rowNum++;
             });
             
             const lastDataRow = rowNum - 1;
             
-            // Add blank row before totals
             worksheet.addRow([]);
             rowNum++;
             
-            // Add Totals Row
+            // Totals Row with formulas
             const totalsRow = worksheet.addRow([
-                'TOTALS',
-                { formula: `COUNTA(B${firstDataRow}:B${lastDataRow}) & " Floors"` },
+                { formula: `SUM(A${firstDataRow}:A${lastDataRow})` },
+                `${lastDataRow - firstDataRow + 1} Floors`,
+                { formula: `SUM(C${firstDataRow}:C${lastDataRow})` },
+                { formula: `SUM(D${firstDataRow}:D${lastDataRow})` },
+                { formula: `SUM(E${firstDataRow}:E${lastDataRow})` },
+                { formula: `SUM(F${firstDataRow}:F${lastDataRow})` },
+                { formula: `SUM(G${firstDataRow}:G${lastDataRow})` },
+                { formula: `SUM(H${firstDataRow}:H${lastDataRow})` },
+                { formula: `SUM(I${firstDataRow}:I${lastDataRow})` },
                 '',
-                { formula: `SUM(D${firstDataRow}:D${lastDataRow})` },  // Height
-                { formula: `SUM(E${firstDataRow}:E${lastDataRow})` },  // Area
-                '',  // Add Use 1
-                { formula: `SUM(G${firstDataRow}:G${lastDataRow})` },  // Add Use 1 Area
-                '',  // Add Use 2
-                { formula: `SUM(I${firstDataRow}:I${lastDataRow})` },  // Add Use 2 Area
-                '',  // Add Use 3
-                { formula: `SUM(K${firstDataRow}:K${lastDataRow})` },  // Add Use 3 Area
-                '',  // Add Use 4
-                { formula: `SUM(M${firstDataRow}:M${lastDataRow})` },  // Add Use 4 Area
-                { formula: `SUM(N${firstDataRow}:N${lastDataRow})` },  // GSF
-                { formula: `SUM(O${firstDataRow}:O${lastDataRow})` },  // Construction GSF
-                '',  // Efficiency (not summed)
-                { formula: `SUM(Q${firstDataRow}:Q${lastDataRow})` },  // RSF
-                { formula: `SUM(R${firstDataRow}:R${lastDataRow})` },  // Parking SF
-                { formula: `SUM(S${firstDataRow}:S${lastDataRow})` },  // Calc Cars
-                { formula: `SUM(T${firstDataRow}:T${lastDataRow})` }   // Actual Cars Drawn
+                { formula: `SUM(K${firstDataRow}:K${lastDataRow})` },
+                { formula: `SUM(L${firstDataRow}:L${lastDataRow})` },
+                { formula: `SUM(M${firstDataRow}:M${lastDataRow})` }
             ]);
             
             totalsRow.eachCell((cell, colNumber) => {
                 Object.assign(cell, totalStyle);
-                if (colNumber === 4) cell.numFmt = '0.00" ft"';
-                if (colNumber === 5) cell.numFmt = '#,##0';
-                if (colNumber === 7) cell.numFmt = '#,##0';
-                if (colNumber === 9) cell.numFmt = '#,##0';
-                if (colNumber === 11) cell.numFmt = '#,##0';
-                if (colNumber === 13) cell.numFmt = '#,##0';
-                if (colNumber === 14) cell.numFmt = '#,##0" GSF"';
-                if (colNumber === 15) cell.numFmt = '#,##0" SF"';
-                if (colNumber === 17) cell.numFmt = '#,##0" RSF"';
-                if (colNumber === 18) cell.numFmt = '#,##0" SF"';
-                if (colNumber === 19) cell.numFmt = '#,##0" cars"';
-                if (colNumber === 20) cell.numFmt = '#,##0" cars"';
+                if (colNumber === 1) cell.numFmt = '0.00" ft"';
+                if (colNumber === 3) cell.numFmt = '#,##0" SF"';
+                if (colNumber >= 4 && colNumber <= 8) cell.numFmt = '#,##0';
+                if (colNumber === 9) cell.numFmt = '#,##0" GSF"';
+                if (colNumber === 11) cell.numFmt = '#,##0" RSF"';
+                if (colNumber === 12) cell.numFmt = '#,##0" cars"';
+                if (colNumber === 13) cell.numFmt = '#,##0" cars"';
             });
             
             const totalsRowNum = rowNum;
             rowNum++;
             
-            // Add blank row after totals
             worksheet.addRow([]);
             rowNum++;
             
-            // Add Overall Efficiency row
-            const effRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', 'Overall Efficiency:', { formula: `IF(N${totalsRowNum}>0,Q${totalsRowNum}/N${totalsRowNum},0)` }]);
-            effRow.getCell(15).numFmt = '0.0%';
-            effRow.getCell(14).font = { bold: true };
-            effRow.getCell(15).font = { bold: true };
+            // Efficiency row
+            const effRow = worksheet.addRow(['', '', '', '', '', '', '', '', 'Overall Efficiency:', { formula: `IF(I${totalsRowNum}>0,K${totalsRowNum}/I${totalsRowNum},0)` }]);
+            effRow.getCell(10).numFmt = '0.0%';
+            effRow.getCell(9).font = { bold: true };
+            effRow.getCell(10).font = { bold: true };
             rowNum++;
             
-            // Add Delta to Goal row - using the efficiency goal from state
             const goalPercent = Math.round(state.efficiencyGoal * 100);
-            const deltaRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', `Delta to ${goalPercent}%:`, { formula: `Q${totalsRowNum}-(N${totalsRowNum}*${state.efficiencyGoal})` }]);
-            deltaRow.getCell(15).numFmt = '#,##0" RSF"';
-            deltaRow.getCell(14).font = { bold: true };
-            deltaRow.getCell(15).font = { bold: true };
+            const deltaRow = worksheet.addRow(['', '', '', '', '', '', '', '', `Delta to ${goalPercent}%:`, { formula: `K${totalsRowNum}-(I${totalsRowNum}*${state.efficiencyGoal})` }]);
+            deltaRow.getCell(10).numFmt = '#,##0" RSF"';
+            deltaRow.getCell(9).font = { bold: true };
+            deltaRow.getCell(10).font = { bold: true };
             rowNum += 2;
             
-            // Add Parking Summary Section - moved to column B
+            // Parking Summary
             const parkingSummaryHeader = worksheet.addRow(['', 'PARKING SUMMARY']);
             parkingSummaryHeader.getCell(2).font = { bold: true, size: 12 };
             worksheet.mergeCells(`B${rowNum}:D${rowNum}`);
             rowNum++;
             
-            // Calculate required parking based on method
             let requiredFormula = '';
             if (state.parkingMethod === 'beds') {
-                // Estimate beds from RSF (assumption: 1000 SF/unit, 1.8 beds/unit)
-                requiredFormula = `ROUND(Q${totalsRowNum}/1000*1.8*${state.parkingRatio},0)`;
+                requiredFormula = `ROUND(K${totalsRowNum}/1000*1.8*${state.parkingRatio},0)`;
             } else if (state.parkingMethod === 'units') {
-                requiredFormula = `ROUND(Q${totalsRowNum}/1000*${state.parkingRatio},0)`;
+                requiredFormula = `ROUND(K${totalsRowNum}/1000*${state.parkingRatio},0)`;
             } else {
                 requiredFormula = `${state.fixedParking}`;
             }
             
-            // Use Actual Cars total (column T) or Calc Cars (column S) if no actuals
-            const providedRow = worksheet.addRow(['', 'Parking Provided:', { formula: `IF(T${totalsRowNum}>0,T${totalsRowNum},S${totalsRowNum})` }]);
+            const providedRow = worksheet.addRow(['', 'Parking Provided:', { formula: `IF(M${totalsRowNum}>0,M${totalsRowNum},L${totalsRowNum})` }]);
             providedRow.getCell(3).numFmt = '#,##0" cars"';
             const providedRowNum = rowNum;
             rowNum++;
@@ -2543,12 +2551,10 @@
             surplusRow.getCell(3).numFmt = '#,##0" cars"';
             surplusRow.getCell(3).font = { bold: true };
             
-            // Add assumptions note
             rowNum += 2;
             const notesRow = worksheet.addRow(['', `SF per Car: ${state.sfPerCar} SF | Parking Method: ${state.parkingMethod} | Ratio: ${state.parkingRatio}`]);
             notesRow.getCell(2).font = { italic: true, color: { argb: 'FF666666' } };
             
-            // Generate file
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
