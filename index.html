@@ -901,6 +901,36 @@
             font-size: 0.8rem;
         }
 
+        /* Site data calculations */
+        .site-calcs {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .site-calc-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            padding: 0.25rem 0;
+        }
+
+        .site-calc-row span:first-child {
+            color: var(--text-secondary);
+        }
+
+        .site-calc-row span:last-child {
+            font-weight: 600;
+        }
+
+        .delta-value.positive {
+            color: #16a34a;
+        }
+
+        .delta-value.negative {
+            color: #dc2626;
+        }
+
         /* Default heights section */
         .default-heights-section {
             margin-top: 0.75rem;
@@ -1181,6 +1211,31 @@
                 </div>
             </div>
 
+            <!-- Site Data -->
+            <div class="sidebar-section compact">
+                <h3>Site Data</h3>
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="siteSF">Site SF</label>
+                        <input type="number" id="siteSF" value="50000" min="0" oninput="updateSiteData()">
+                    </div>
+                    <div class="form-group half">
+                        <label for="allowedFAR">Allowed FAR</label>
+                        <input type="number" id="allowedFAR" value="5.0" min="0" step="0.1" oninput="updateSiteData()">
+                    </div>
+                </div>
+                <div class="site-calcs">
+                    <div class="site-calc-row">
+                        <span>Total FAR Available:</span>
+                        <span id="totalFARAvailable">250,000 SF</span>
+                    </div>
+                    <div class="site-calc-row">
+                        <span>Delta to FAR:</span>
+                        <span id="deltaToFAR" class="delta-value">0 SF</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Parking Calculator -->
             <div class="sidebar-section compact">
                 <h3>Parking Calculator</h3>
@@ -1338,6 +1393,8 @@
             efficiency: 0.85,
             efficiencyGoal: 0.80,
             skip13: true,
+            siteSF: 50000,
+            allowedFAR: 5.0,
             sfPerCar: 410,
             parkingMethod: 'beds',
             parkingRatio: 0.9,
@@ -2115,6 +2172,9 @@
             const surplusEl = document.getElementById('parkingSurplus');
             surplusEl.textContent = parkingSurplus >= 0 ? `+${parkingSurplus}` : parkingSurplus;
             surplusEl.className = `parking-stat-value ${parkingSurplus >= 0 ? 'surplus' : 'deficit'}`;
+            
+            // Update site data calculations
+            updateSiteCalcs(totalGSF);
         }
 
         function generateAllFloors() {
@@ -2248,6 +2308,24 @@
             updatePreview();
         }
 
+        function updateSiteData() {
+            state.siteSF = parseInt(document.getElementById('siteSF').value) || 0;
+            state.allowedFAR = parseFloat(document.getElementById('allowedFAR').value) || 0;
+            updatePreview();
+        }
+
+        function updateSiteCalcs(totalGSF) {
+            const totalFARAvailable = state.siteSF * state.allowedFAR;
+            const deltaToFAR = totalGSF - totalFARAvailable;
+            
+            document.getElementById('totalFARAvailable').textContent = formatNumber(totalFARAvailable) + ' SF';
+            
+            const deltaEl = document.getElementById('deltaToFAR');
+            deltaEl.textContent = (deltaToFAR >= 0 ? '+' : '') + formatNumber(deltaToFAR) + ' SF';
+            deltaEl.classList.remove('positive', 'negative');
+            deltaEl.classList.add(deltaToFAR <= 0 ? 'positive' : 'negative');
+        }
+
         function updateParkingMethod() {
             const method = document.querySelector('input[name="parkingMethod"]:checked').value;
             state.parkingMethod = method;
@@ -2311,6 +2389,8 @@
                 efficiency: 0.85,
                 efficiencyGoal: 0.80,
                 skip13: true,
+                siteSF: 50000,
+                allowedFAR: 5.0,
                 sfPerCar: 410,
                 parkingMethod: 'beds',
                 parkingRatio: 0.9,
@@ -2336,6 +2416,8 @@
             document.getElementById('efficiencyGoal').value = state.efficiencyGoal * 100;
             document.getElementById('efficiencyGoalValue').textContent = Math.round(state.efficiencyGoal * 100) + '%';
             document.getElementById('skip13').checked = state.skip13;
+            document.getElementById('siteSF').value = state.siteSF;
+            document.getElementById('allowedFAR').value = state.allowedFAR;
             document.getElementById('sfPerCar').value = state.sfPerCar;
             document.getElementById('parkingRatio').value = state.parkingRatio;
             document.getElementById('fixedParking').value = state.fixedParking;
@@ -2649,13 +2731,30 @@
             deltaRow.getCell(10).alignment = { horizontal: 'center' };
             rowNum += 2;
             
-            // Parking Summary
-            const parkingSummaryHeader = worksheet.addRow(['', 'PARKING SUMMARY']);
-            parkingSummaryHeader.getCell(2).font = { bold: true, size: 12 };
-            parkingSummaryHeader.getCell(2).alignment = { horizontal: 'left' };
+            // Calculate total GSF for site data
+            let totalGSFForSite = 0;
+            allFloors.forEach(floor => {
+                if (floor.countsInGSF) totalGSFForSite += floor.gsf;
+                if (floor.additionalUses) {
+                    floor.additionalUses.forEach(au => {
+                        if (au.enabled && au.countsInGSF && au.sf > 0) totalGSFForSite += au.sf;
+                    });
+                }
+            });
+            const totalFARAvailable = state.siteSF * state.allowedFAR;
+            const deltaToFAR = totalGSFForSite - totalFARAvailable;
+            
+            // Site Data Summary (Column B) and Parking Summary (Column G)
+            const siteHeader = worksheet.addRow(['', 'SITE DATA', '', '', '', '', 'PARKING SUMMARY']);
+            siteHeader.getCell(2).font = { bold: true, size: 12 };
+            siteHeader.getCell(2).alignment = { horizontal: 'left' };
+            siteHeader.getCell(7).font = { bold: true, size: 12 };
+            siteHeader.getCell(7).alignment = { horizontal: 'left' };
             worksheet.mergeCells(`B${rowNum}:D${rowNum}`);
+            worksheet.mergeCells(`G${rowNum}:I${rowNum}`);
             rowNum++;
             
+            // Row 1: Site SF | Parking Provided
             let requiredFormula = '';
             if (state.parkingMethod === 'beds') {
                 requiredFormula = `ROUND(K${totalsRowNum}/1000*1.8*${state.parkingRatio},0)`;
@@ -2665,25 +2764,44 @@
                 requiredFormula = `${state.fixedParking}`;
             }
             
-            const providedRow = worksheet.addRow(['', 'Parking Provided:', '', { formula: `IF(M${totalsRowNum}>0,M${totalsRowNum},L${totalsRowNum})` }]);
-            providedRow.getCell(2).alignment = { horizontal: 'left' };
-            providedRow.getCell(4).numFmt = '#,##0" cars"';
-            providedRow.getCell(4).alignment = { horizontal: 'left' };
+            const row1 = worksheet.addRow(['', 'Site SF:', '', state.siteSF, '', '', 'Parking Provided:', '', { formula: `IF(M${totalsRowNum}>0,M${totalsRowNum},L${totalsRowNum})` }]);
+            row1.getCell(2).alignment = { horizontal: 'left' };
+            row1.getCell(4).numFmt = '#,##0" SF"';
+            row1.getCell(4).alignment = { horizontal: 'left' };
+            row1.getCell(7).alignment = { horizontal: 'left' };
+            row1.getCell(9).numFmt = '#,##0" cars"';
+            row1.getCell(9).alignment = { horizontal: 'left' };
             const providedRowNum = rowNum;
             rowNum++;
             
-            const requiredRow = worksheet.addRow(['', 'Parking Required:', '', { formula: requiredFormula }]);
-            requiredRow.getCell(2).alignment = { horizontal: 'left' };
-            requiredRow.getCell(4).numFmt = '#,##0" cars"';
-            requiredRow.getCell(4).alignment = { horizontal: 'left' };
+            // Row 2: Allowed FAR | Parking Required
+            const row2 = worksheet.addRow(['', 'Allowed FAR:', '', state.allowedFAR, '', '', 'Parking Required:', '', { formula: requiredFormula }]);
+            row2.getCell(2).alignment = { horizontal: 'left' };
+            row2.getCell(4).numFmt = '0.0';
+            row2.getCell(4).alignment = { horizontal: 'left' };
+            row2.getCell(7).alignment = { horizontal: 'left' };
+            row2.getCell(9).numFmt = '#,##0" cars"';
+            row2.getCell(9).alignment = { horizontal: 'left' };
             const requiredRowNum = rowNum;
             rowNum++;
             
-            const surplusRow = worksheet.addRow(['', 'Surplus / (Deficit):', '', { formula: `D${providedRowNum}-D${requiredRowNum}` }]);
-            surplusRow.getCell(2).alignment = { horizontal: 'left' };
-            surplusRow.getCell(4).numFmt = '#,##0" cars"';
-            surplusRow.getCell(4).font = { bold: true };
-            surplusRow.getCell(4).alignment = { horizontal: 'left' };
+            // Row 3: Total FAR Available | Surplus/Deficit
+            const row3 = worksheet.addRow(['', 'Total FAR Available:', '', totalFARAvailable, '', '', 'Surplus / (Deficit):', '', { formula: `I${providedRowNum}-I${requiredRowNum}` }]);
+            row3.getCell(2).alignment = { horizontal: 'left' };
+            row3.getCell(4).numFmt = '#,##0" SF"';
+            row3.getCell(4).alignment = { horizontal: 'left' };
+            row3.getCell(7).alignment = { horizontal: 'left' };
+            row3.getCell(9).numFmt = '#,##0" cars"';
+            row3.getCell(9).font = { bold: true };
+            row3.getCell(9).alignment = { horizontal: 'left' };
+            rowNum++;
+            
+            // Row 4: Delta to FAR
+            const row4 = worksheet.addRow(['', 'Delta to FAR:', '', deltaToFAR]);
+            row4.getCell(2).alignment = { horizontal: 'left' };
+            row4.getCell(4).numFmt = '#,##0" SF"';
+            row4.getCell(4).font = { bold: true, color: { argb: deltaToFAR <= 0 ? 'FF16A34A' : 'FFDC2626' } };
+            row4.getCell(4).alignment = { horizontal: 'left' };
             
             rowNum += 2;
             const notesRow = worksheet.addRow(['', `SF per Car: ${state.sfPerCar} SF | Parking Method: ${state.parkingMethod} | Ratio: ${state.parkingRatio}`]);
