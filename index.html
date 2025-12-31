@@ -918,7 +918,7 @@
             <div class="sidebar-section">
                 <h3>Building Settings</h3>
                 <div class="form-group">
-                    <label for="efficiency">Typical Floor Residential Efficiency</label>
+                    <label for="efficiency">Typical Floor Residential Efficiency Goal</label>
                     <input type="range" id="efficiency" min="70" max="95" value="85" oninput="updateEfficiencyDisplay()">
                     <div class="range-value" id="efficiencyValue">85%</div>
                 </div>
@@ -1087,14 +1087,14 @@
                                 <th>Type</th>
                                 <th>Primary Use</th>
                                 <th class="number">Height</th>
-                                <th class="number">Primary GSF</th>
+                                <th class="number">Primary Area</th>
+                                <th class="number">GSF</th>
+                                <th class="number">Constr. GSF</th>
                                 <th class="number">Efficiency</th>
                                 <th class="number">RSF</th>
-                                <th>Secondary Use</th>
-                                <th class="number">Secondary SF</th>
                                 <th class="number">Parking SF</th>
                                 <th class="number">Calc Cars</th>
-                                <th class="number">Actual Cars</th>
+                                <th class="number">Actual Cars Drawn</th>
                             </tr>
                         </thead>
                         <tbody id="previewTableBody">
@@ -1329,6 +1329,54 @@
                 card.addEventListener('drop', handleDrop);
                 card.addEventListener('dragleave', handleDragLeave);
                 
+                // Build additional uses badges for header
+                const additionalBadges = ft.additionalUses ? ft.additionalUses
+                    .filter(au => au.enabled && au.use)
+                    .map(au => `<span class="floor-type-badge ${au.use.toLowerCase()}" style="opacity: 0.7; font-size: 0.65rem;">+${au.use}</span>`)
+                    .join('') : '';
+                
+                // Build additional uses HTML
+                let additionalUsesHTML = '';
+                if (ft.additionalUses) {
+                    for (let i = 0; i < 4; i++) {
+                        const au = ft.additionalUses[i] || { enabled: false, use: 'Residential', sf: 0, countsInGSF: true };
+                        // Show checkbox if: first one OR previous one is enabled
+                        const showCheckbox = i === 0 || (ft.additionalUses[i-1] && ft.additionalUses[i-1].enabled);
+                        
+                        if (showCheckbox) {
+                            additionalUsesHTML += `
+                            <div class="form-group full-width" style="${i === 0 ? 'border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 0.5rem;' : ''}">
+                                <label class="checkbox-group">
+                                    <input type="checkbox" ${au.enabled ? 'checked' : ''} onchange="toggleAdditionalUse(${index}, ${i}, this.checked)">
+                                    <span style="font-weight: 600;">Additional Use ${i + 1}</span>
+                                </label>
+                            </div>
+                            `;
+                            
+                            if (au.enabled) {
+                                additionalUsesHTML += `
+                                <div class="form-group">
+                                    <label>Additional Use ${i + 1}</label>
+                                    <select onchange="updateAdditionalUseType(${index}, ${i}, this.value)">
+                                        ${USE_TYPES.map(u => `<option value="${u}" ${au.use === u ? 'selected' : ''}>${u}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Additional Use ${i + 1} Area per Floor</label>
+                                    <div class="sf-input-group">
+                                        <input type="number" value="${au.sf || ''}" placeholder="0" onchange="updateAdditionalUseSF(${index}, ${i}, this.value)">
+                                        <label class="checkbox-inline">
+                                            <input type="checkbox" ${au.countsInGSF ? 'checked' : ''} onchange="updateAdditionalUseGSF(${index}, ${i}, this.checked)">
+                                            <span>GSF</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                `;
+                            }
+                        }
+                    }
+                }
+                
                 card.innerHTML = `
                     <div class="floor-type-header" onclick="toggleFloorType(${index})">
                         <div class="floor-type-info">
@@ -1339,7 +1387,7 @@
                                 </svg>
                             </div>
                             <span class="floor-type-badge ${ft.use.toLowerCase()}">${ft.use}</span>
-                            ${ft.secondaryUse && ft.secondaryUse !== 'None' ? `<span class="floor-type-badge ${ft.secondaryUse.toLowerCase()}" style="opacity: 0.7; font-size: 0.65rem;">+${ft.secondaryUse}</span>` : ''}
+                            ${additionalBadges}
                             <span class="floor-type-name">${ft.name}</span>
                             <span class="floor-type-range">${ft.startFloor} → ${ft.endFloor} (${floorCount} floor${floorCount !== 1 ? 's' : ''})</span>
                         </div>
@@ -1375,7 +1423,7 @@
                                 <div class="count-display" style="text-align: left; padding: 0.5rem;">${ft.startFloor} → ${ft.endFloor}</div>
                             </div>
                             <div class="form-group">
-                                <label>Primary GSF per Floor</label>
+                                <label>Primary Area per Floor</label>
                                 <div class="sf-input-group">
                                     <input type="number" value="${ft.gsf}" onchange="updateFloorTypeField(${index}, 'gsf', parseInt(this.value))">
                                     <label class="checkbox-inline">
@@ -1391,36 +1439,12 @@
                             
                             ${ft.use === 'Parking' ? `
                             <div class="form-group">
-                                <label>Actual Cars (optional override)</label>
-                                <input type="number" value="${ft.actualCars || ''}" placeholder="Calculated" onchange="updateFloorTypeField(${index}, 'actualCars', parseInt(this.value) || null)">
+                                <label>Actual Cars Drawn</label>
+                                <input type="number" value="${ft.actualCars || ''}" placeholder="# As Drawn (overrides calculated)" onchange="updateFloorTypeField(${index}, 'actualCars', parseInt(this.value) || null)">
                             </div>
                             ` : ''}
                             
-                            <div class="form-group full-width" style="border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
-                                <label class="checkbox-group">
-                                    <input type="checkbox" ${ft.hasMixedUse ? 'checked' : ''} onchange="toggleMixedUse(${index}, this.checked)">
-                                    <span style="font-weight: 600;">Mixed Use</span>
-                                </label>
-                            </div>
-                            
-                            ${ft.hasMixedUse ? `
-                            <div class="form-group">
-                                <label>Secondary Use</label>
-                                <select onchange="updateSecondaryUse(${index}, this.value)">
-                                    ${USE_TYPES.map(u => `<option value="${u}" ${ft.secondaryUse === u ? 'selected' : ''}>${u}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Secondary SF per Floor</label>
-                                <div class="sf-input-group">
-                                    <input type="number" value="${ft.secondarySF || ''}" placeholder="0" onchange="updateFloorTypeField(${index}, 'secondarySF', parseInt(this.value) || 0)">
-                                    <label class="checkbox-inline">
-                                        <input type="checkbox" ${ft.secondaryCountsInGSF ? 'checked' : ''} onchange="updateFloorTypeField(${index}, 'secondaryCountsInGSF', this.checked)">
-                                        <span>GSF</span>
-                                    </label>
-                                </div>
-                            </div>
-                            ` : ''}
+                            ${additionalUsesHTML}
                         </div>
                     </div>
                 `;
@@ -1566,14 +1590,12 @@
                 gsf: referenceType.gsf,
                 height: referenceType.height,
                 countsInGSF: referenceType.countsInGSF,
-                parkingSF: referenceType.parkingSF,
                 actualCars: referenceType.actualCars,
                 expanded: true,
                 isPLevel: referenceType.isPLevel,
-                hasMixedUse: referenceType.hasMixedUse,
-                secondaryUse: referenceType.secondaryUse,
-                secondarySF: referenceType.secondarySF,
-                secondaryCountsInGSF: referenceType.secondaryCountsInGSF
+                additionalUses: referenceType.additionalUses ? 
+                    referenceType.additionalUses.map(au => ({...au})) : 
+                    getDefaultAdditionalUses()
             };
             
             // Insert at the correct position
@@ -1656,6 +1678,7 @@
             let totalFloors = 0;
             let totalHeight = 0;
             let totalGSF = 0;
+            let totalConstructionGSF = 0;
             let totalRSF = 0;
             let totalParking = 0;
             let totalParkingSF = 0;
@@ -1670,47 +1693,67 @@
                 const height = feetInchesToDecimal(floor.height);
                 const efficiency = floor.use === 'Residential' ? state.efficiency : 0;
                 
-                // Calculate primary RSF (only for Residential)
+                // Calculate GSF (only checked items)
+                let floorGSF = 0;
+                if (floor.countsInGSF) {
+                    floorGSF += floor.gsf;
+                }
+                
+                // Calculate Construction GSF (ALL items)
+                let floorConstructionGSF = floor.gsf;
+                
+                // Calculate primary RSF (only for Residential with GSF checked)
                 let primaryRSF = 0;
                 if (floor.use === 'Residential' && floor.countsInGSF) {
                     primaryRSF = Math.round(floor.gsf * efficiency);
                 }
                 
-                // Calculate secondary RSF if secondary use is Residential
-                let secondaryRSF = 0;
-                if (floor.hasMixedUse && floor.secondaryUse === 'Residential' && floor.secondarySF > 0) {
-                    secondaryRSF = Math.round(floor.secondarySF * efficiency);
+                // Calculate RSF and GSF from additional uses
+                let additionalRSF = 0;
+                if (floor.additionalUses) {
+                    floor.additionalUses.forEach(au => {
+                        if (au.enabled && au.sf > 0) {
+                            // Add to Construction GSF (all items)
+                            floorConstructionGSF += au.sf;
+                            
+                            // Add to GSF only if checked
+                            if (au.countsInGSF) {
+                                floorGSF += au.sf;
+                            }
+                            
+                            // Add RSF if Residential and GSF is checked
+                            if (au.use === 'Residential' && au.countsInGSF) {
+                                additionalRSF += Math.round(au.sf * efficiency);
+                            }
+                        }
+                    });
                 }
                 
-                const totalRSFForFloor = primaryRSF + secondaryRSF;
+                const totalRSFForFloor = primaryRSF + additionalRSF;
                 
-                // Parking calculations - any parking use (primary or secondary)
+                // Parking calculations - primary and additional uses
                 let parkingSF = 0;
                 if (floor.use === 'Parking') {
                     parkingSF = floor.gsf;
                 }
-                if (floor.hasMixedUse && floor.secondaryUse === 'Parking' && floor.secondarySF > 0) {
-                    parkingSF += floor.secondarySF;
+                if (floor.additionalUses) {
+                    floor.additionalUses.forEach(au => {
+                        if (au.enabled && au.use === 'Parking' && au.sf > 0) {
+                            parkingSF += au.sf;
+                        }
+                    });
                 }
                 
                 const calcCars = parkingSF > 0 ? Math.floor(parkingSF / state.sfPerCar) : 0;
                 const actualCars = floor.actualCars || 0;
                 
-                // GSF calculations using the checkbox values
-                let floorGSF = 0;
-                if (floor.countsInGSF) {
-                    floorGSF += floor.gsf;
-                }
-                if (floor.hasMixedUse && floor.secondaryCountsInGSF && floor.secondarySF > 0) {
-                    floorGSF += floor.secondarySF;
-                }
-                
                 // Always count the floor
                 totalFloors++;
                 totalHeight += height;
                 
-                // Only add to GSF if it counts
+                // Totals
                 totalGSF += floorGSF;
+                totalConstructionGSF += floorConstructionGSF;
                 totalRSF += totalRSFForFloor;
                 totalCalcCars += calcCars;
                 totalActualCars += actualCars;
@@ -1733,10 +1776,10 @@
                         <td>${floor.use}</td>
                         <td class="number">${decimalToFeetInches(height)}</td>
                         <td class="number">${formatNumber(floor.gsf)}</td>
+                        <td class="number">${floorGSF > 0 ? formatNumber(floorGSF) : '-'}</td>
+                        <td class="number">${formatNumber(floorConstructionGSF)}</td>
                         <td class="number">${floor.use === 'Residential' ? Math.round(efficiency * 100) + '%' : '-'}</td>
-                        <td class="number">${primaryRSF > 0 ? formatNumber(primaryRSF) : '-'}</td>
-                        <td>${floor.hasMixedUse && floor.secondaryUse ? floor.secondaryUse : '-'}</td>
-                        <td class="number">${floor.hasMixedUse && floor.secondarySF > 0 ? formatNumber(floor.secondarySF) : '-'}</td>
+                        <td class="number">${totalRSFForFloor > 0 ? formatNumber(totalRSFForFloor) : '-'}</td>
                         <td class="number">${parkingSF > 0 ? formatNumber(parkingSF) : '-'}</td>
                         <td class="number">${calcCars > 0 ? calcCars : '-'}</td>
                         <td class="number">${floor.actualCars ? floor.actualCars : '-'}</td>
@@ -1751,11 +1794,11 @@
                 <tr class="totals">
                     <td colspan="3">TOTALS</td>
                     <td class="number">${decimalToFeetInches(totalHeight)}</td>
+                    <td class="number">-</td>
                     <td class="number">${formatNumber(totalGSF)} GSF</td>
+                    <td class="number">${formatNumber(totalConstructionGSF)} SF</td>
                     <td class="number">${overallEfficiency.toFixed(1)}%</td>
                     <td class="number">${formatNumber(totalRSF)} RSF</td>
-                    <td>-</td>
-                    <td class="number">-</td>
                     <td class="number">${formatNumber(totalParkingSF)} SF</td>
                     <td class="number">${totalCalcCars} cars</td>
                     <td class="number">${totalActualCars > 0 ? totalActualCars + ' cars' : '-'}</td>
@@ -1805,13 +1848,9 @@
                         gsf: ft.gsf,
                         height: ft.height,
                         countsInGSF: ft.countsInGSF,
-                        parkingSF: ft.parkingSF,
                         actualCars: ft.actualCars,
                         isPLevel: ft.isPLevel,
-                        hasMixedUse: ft.hasMixedUse,
-                        secondaryUse: ft.secondaryUse,
-                        secondarySF: ft.secondarySF || 0,
-                        secondaryCountsInGSF: ft.secondaryCountsInGSF,
+                        additionalUses: ft.additionalUses ? ft.additionalUses.map(au => ({...au})) : [],
                         sortOrder: parseFloorLabel(label)
                     });
                 });
@@ -1844,25 +1883,35 @@
             updatePreview();
         }
 
-        // Toggle mixed use section
-        function toggleMixedUse(index, checked) {
-            state.floorTypes[index].hasMixedUse = checked;
-            if (checked && !state.floorTypes[index].secondaryUse) {
-                // Default to Residential with GSF checked
-                state.floorTypes[index].secondaryUse = 'Residential';
-                state.floorTypes[index].secondaryCountsInGSF = true;
-                state.floorTypes[index].secondarySF = 0;
+        // Toggle additional use
+        function toggleAdditionalUse(floorIndex, useIndex, checked) {
+            state.floorTypes[floorIndex].additionalUses[useIndex].enabled = checked;
+            if (checked && !state.floorTypes[floorIndex].additionalUses[useIndex].use) {
+                state.floorTypes[floorIndex].additionalUses[useIndex].use = 'Residential';
+                state.floorTypes[floorIndex].additionalUses[useIndex].countsInGSF = true;
             }
             renderFloorTypes();
             updatePreview();
         }
 
-        // Update secondary use and set GSF default
-        function updateSecondaryUse(index, value) {
-            state.floorTypes[index].secondaryUse = value;
+        // Update additional use type and set GSF default
+        function updateAdditionalUseType(floorIndex, useIndex, value) {
+            state.floorTypes[floorIndex].additionalUses[useIndex].use = value;
             // Parking and Mechanical default to NOT counting in GSF, all others do
-            state.floorTypes[index].secondaryCountsInGSF = (value !== 'Parking' && value !== 'Mechanical');
+            state.floorTypes[floorIndex].additionalUses[useIndex].countsInGSF = (value !== 'Parking' && value !== 'Mechanical');
             renderFloorTypes();
+            updatePreview();
+        }
+
+        // Update additional use SF
+        function updateAdditionalUseSF(floorIndex, useIndex, value) {
+            state.floorTypes[floorIndex].additionalUses[useIndex].sf = parseInt(value) || 0;
+            updatePreview();
+        }
+
+        // Update additional use GSF checkbox
+        function updateAdditionalUseGSF(floorIndex, useIndex, checked) {
+            state.floorTypes[floorIndex].additionalUses[useIndex].countsInGSF = checked;
             updatePreview();
         }
 
@@ -1872,17 +1921,13 @@
                 use: 'Residential',
                 startFloor: '02',
                 endFloor: '10',
-                gsf: 22000,
+                gsf: 10000,
                 height: "10' 8\"",
                 countsInGSF: true,
-                parkingSF: null,
                 actualCars: null,
                 expanded: true,
                 isPLevel: false,
-                hasMixedUse: false,
-                secondaryUse: null,
-                secondarySF: 0,
-                secondaryCountsInGSF: false
+                additionalUses: getDefaultAdditionalUses()
             };
             state.floorTypes.push(newType);
             autoRenumberFloors();
@@ -2010,16 +2055,25 @@
 
         function getDefaultFloorTypes() {
             return [
-                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B1', endFloor: 'B1', gsf: 45000, height: "10' 0\"", countsInGSF: false, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
-                { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 38000, height: "18' 0\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
-                { name: 'P02 - Van Accessible', use: 'Parking', startFloor: 'P02', endFloor: 'P02', gsf: 40000, height: "11' 0\"", countsInGSF: false, expanded: false, isPLevel: true, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
-                { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P03', endFloor: 'P03', gsf: 40000, height: "9' 8\"", countsInGSF: false, expanded: false, isPLevel: true, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
-                { name: 'Amenity Level', use: 'Amenity', startFloor: '04', endFloor: '04', gsf: 22000, height: "12' 0\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
-                { name: 'Tower - Lower Typical', use: 'Residential', startFloor: '05', endFloor: '05', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
-                { name: 'Tower - Middle Typical', use: 'Residential', startFloor: '06', endFloor: '06', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
-                { name: 'Tower - Upper Typical', use: 'Residential', startFloor: '07', endFloor: '07', gsf: 22000, height: "10' 8\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
-                { name: 'Penthouse', use: 'Residential', startFloor: '08', endFloor: '08', gsf: 18000, height: "11' 8\"", countsInGSF: true, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false },
-                { name: 'Roof - Mechanical', use: 'Mechanical', startFloor: '09', endFloor: '09', gsf: 5000, height: "15' 0\"", countsInGSF: false, expanded: false, hasMixedUse: false, secondaryUse: null, secondarySF: 0, secondaryCountsInGSF: false }
+                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B1', endFloor: 'B1', gsf: 10000, height: "10' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 10000, height: "18' 0\"", countsInGSF: true, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'P02 - Van Accessible', use: 'Parking', startFloor: 'P02', endFloor: 'P02', gsf: 10000, height: "11' 0\"", countsInGSF: false, expanded: false, isPLevel: true, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P03', endFloor: 'P03', gsf: 10000, height: "9' 8\"", countsInGSF: false, expanded: false, isPLevel: true, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Amenity Level', use: 'Amenity', startFloor: '04', endFloor: '04', gsf: 10000, height: "12' 0\"", countsInGSF: true, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Tower - Lower Typical', use: 'Residential', startFloor: '05', endFloor: '05', gsf: 10000, height: "10' 8\"", countsInGSF: true, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Tower - Middle Typical', use: 'Residential', startFloor: '06', endFloor: '06', gsf: 10000, height: "10' 8\"", countsInGSF: true, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Tower - Upper Typical', use: 'Residential', startFloor: '07', endFloor: '07', gsf: 10000, height: "10' 8\"", countsInGSF: true, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Penthouse', use: 'Residential', startFloor: '08', endFloor: '08', gsf: 10000, height: "11' 8\"", countsInGSF: true, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Roof - Mechanical', use: 'Mechanical', startFloor: '09', endFloor: '09', gsf: 10000, height: "15' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() }
+            ];
+        }
+
+        function getDefaultAdditionalUses() {
+            return [
+                { enabled: false, use: 'Residential', sf: 0, countsInGSF: true },
+                { enabled: false, use: 'Residential', sf: 0, countsInGSF: true },
+                { enabled: false, use: 'Residential', sf: 0, countsInGSF: true },
+                { enabled: false, use: 'Residential', sf: 0, countsInGSF: true }
             ];
         }
 
@@ -2047,28 +2101,28 @@
             
             // Add project header section
             // Row 1: Project Name
-            worksheet.mergeCells('A1:L1');
+            worksheet.mergeCells('A1:T1');
             const titleCell = worksheet.getCell('A1');
             titleCell.value = state.projectName;
             titleCell.font = { bold: true, size: 16 };
             titleCell.alignment = { horizontal: 'left' };
             
             // Row 2: City, State
-            worksheet.mergeCells('A2:L2');
+            worksheet.mergeCells('A2:T2');
             const cityCell = worksheet.getCell('A2');
             cityCell.value = state.projectCity;
             cityCell.font = { size: 12 };
             cityCell.alignment = { horizontal: 'left' };
             
             // Row 3: Project Number
-            worksheet.mergeCells('A3:L3');
+            worksheet.mergeCells('A3:T3');
             const projectNumCell = worksheet.getCell('A3');
             projectNumCell.value = `HKS Project# ${state.projectNumber}`;
             projectNumCell.font = { size: 11 };
             projectNumCell.alignment = { horizontal: 'left' };
             
             // Row 4: Date
-            worksheet.mergeCells('A4:L4');
+            worksheet.mergeCells('A4:T4');
             const dateCell = worksheet.getCell('A4');
             const today = new Date();
             const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -2080,7 +2134,15 @@
             worksheet.addRow([]);
             
             // Row 6: Column headers
-            const headers = ['Floor', 'Type', 'Primary Use', 'Height', 'Primary GSF', 'Efficiency', 'RSF', 'Secondary Use', 'Secondary SF', 'Parking SF', 'Calc Cars', 'Actual Cars'];
+            const headers = [
+                'Floor', 'Type', 'Primary Use', 'Height', 'Primary Area',
+                'Additional Use 1', 'Additional Use 1 Area',
+                'Additional Use 2', 'Additional Use 2 Area',
+                'Additional Use 3', 'Additional Use 3 Area',
+                'Additional Use 4', 'Additional Use 4 Area',
+                'GSF', 'Construction GSF', 'Efficiency', 'RSF', 
+                'Parking SF', 'Calc Cars', 'Actual Cars Drawn'
+            ];
             worksheet.getRow(6).values = headers;
             worksheet.getRow(6).eachCell((cell) => {
                 Object.assign(cell, headerStyle);
@@ -2095,14 +2157,22 @@
                 { width: 25 },  // Type
                 { width: 12 },  // Primary Use
                 { width: 12 },  // Height
-                { width: 15 },  // Primary GSF
+                { width: 14 },  // Primary Area
+                { width: 16 },  // Additional Use 1
+                { width: 16 },  // Additional Use 1 Area
+                { width: 16 },  // Additional Use 2
+                { width: 16 },  // Additional Use 2 Area
+                { width: 16 },  // Additional Use 3
+                { width: 16 },  // Additional Use 3 Area
+                { width: 16 },  // Additional Use 4
+                { width: 16 },  // Additional Use 4 Area
+                { width: 12 },  // GSF
+                { width: 14 },  // Construction GSF
                 { width: 12 },  // Efficiency
-                { width: 15 },  // RSF
-                { width: 14 },  // Secondary Use
-                { width: 14 },  // Secondary SF
-                { width: 15 },  // Parking SF
+                { width: 12 },  // RSF
+                { width: 12 },  // Parking SF
                 { width: 12 },  // Calc Cars
-                { width: 12 }   // Actual Cars
+                { width: 16 }   // Actual Cars Drawn
             ];
             
             // Generate floor data
@@ -2129,14 +2199,33 @@
                 const height = feetInchesToDecimal(floor.height);
                 const efficiency = floor.use === 'Residential' ? state.efficiency : 0;
                 
-                // Calculate parking SF (from primary and/or secondary)
+                // Get additional uses data
+                const au1 = floor.additionalUses && floor.additionalUses[0] && floor.additionalUses[0].enabled ? floor.additionalUses[0] : null;
+                const au2 = floor.additionalUses && floor.additionalUses[1] && floor.additionalUses[1].enabled ? floor.additionalUses[1] : null;
+                const au3 = floor.additionalUses && floor.additionalUses[2] && floor.additionalUses[2].enabled ? floor.additionalUses[2] : null;
+                const au4 = floor.additionalUses && floor.additionalUses[3] && floor.additionalUses[3].enabled ? floor.additionalUses[3] : null;
+                
+                // Calculate GSF (only checked items)
+                let floorGSF = floor.countsInGSF ? floor.gsf : 0;
+                if (au1 && au1.countsInGSF) floorGSF += au1.sf || 0;
+                if (au2 && au2.countsInGSF) floorGSF += au2.sf || 0;
+                if (au3 && au3.countsInGSF) floorGSF += au3.sf || 0;
+                if (au4 && au4.countsInGSF) floorGSF += au4.sf || 0;
+                
+                // Calculate Construction GSF (ALL items)
+                let floorConstructionGSF = floor.gsf;
+                if (au1) floorConstructionGSF += au1.sf || 0;
+                if (au2) floorConstructionGSF += au2.sf || 0;
+                if (au3) floorConstructionGSF += au3.sf || 0;
+                if (au4) floorConstructionGSF += au4.sf || 0;
+                
+                // Calculate parking SF (from primary and additional)
                 let parkingSF = 0;
-                if (floor.use === 'Parking') {
-                    parkingSF = floor.gsf;
-                }
-                if (floor.hasMixedUse && floor.secondaryUse === 'Parking' && floor.secondarySF > 0) {
-                    parkingSF += floor.secondarySF;
-                }
+                if (floor.use === 'Parking') parkingSF = floor.gsf;
+                if (au1 && au1.use === 'Parking') parkingSF += au1.sf || 0;
+                if (au2 && au2.use === 'Parking') parkingSF += au2.sf || 0;
+                if (au3 && au3.use === 'Parking') parkingSF += au3.sf || 0;
+                if (au4 && au4.use === 'Parking') parkingSF += au4.sf || 0;
                 
                 const isBelowGrade = floor.label.toUpperCase().startsWith('B');
                 
@@ -2145,14 +2234,22 @@
                     floor.typeName,
                     floor.use,
                     height,
-                    floor.gsf, // Always show GSF
+                    floor.gsf,
+                    au1 ? au1.use : '',
+                    au1 ? (au1.sf || '') : '',
+                    au2 ? au2.use : '',
+                    au2 ? (au2.sf || '') : '',
+                    au3 ? au3.use : '',
+                    au3 ? (au3.sf || '') : '',
+                    au4 ? au4.use : '',
+                    au4 ? (au4.sf || '') : '',
+                    floorGSF > 0 ? floorGSF : '',
+                    floorConstructionGSF,
                     floor.use === 'Residential' ? efficiency : '',
                     '', // RSF - formula
-                    floor.hasMixedUse && floor.secondaryUse ? floor.secondaryUse : '',
-                    floor.hasMixedUse && floor.secondarySF > 0 ? floor.secondarySF : '',
                     parkingSF > 0 ? parkingSF : '',
                     '', // Calc Cars - formula
-                    floor.actualCars || ''  // Actual Cars
+                    floor.actualCars || ''  // Actual Cars Drawn
                 ]);
                 
                 // Apply row color based on use type (darker for below grade)
@@ -2165,38 +2262,57 @@
                     };
                 });
                 
-                // Format height as feet-inches
+                // Format height as feet-inches (col 4)
                 row.getCell(4).numFmt = '0.00" ft"';
                 
-                // Format Primary GSF
+                // Format Primary Area (col 5)
                 row.getCell(5).numFmt = '#,##0';
                 
-                // Format Efficiency as percentage
-                if (floor.use === 'Residential') {
-                    row.getCell(6).numFmt = '0%';
-                }
-                
-                // RSF Formula - handles primary and secondary residential
-                if (floor.use === 'Residential' && floor.countsInGSF) {
-                    if (floor.hasMixedUse && floor.secondaryUse === 'Residential' && floor.secondarySF > 0) {
-                        row.getCell(7).value = { formula: `IF(F${rowNum}>0,(E${rowNum}+I${rowNum})*F${rowNum},0)` };
-                    } else {
-                        row.getCell(7).value = { formula: `IF(F${rowNum}>0,E${rowNum}*F${rowNum},0)` };
-                    }
-                } else if (floor.hasMixedUse && floor.secondaryUse === 'Residential' && floor.secondarySF > 0) {
-                    row.getCell(7).value = { formula: `I${rowNum}*${state.efficiency}` };
-                }
+                // Format Additional Use Areas (cols 7, 9, 11, 13)
                 row.getCell(7).numFmt = '#,##0';
-                
-                // Secondary SF format
                 row.getCell(9).numFmt = '#,##0';
+                row.getCell(11).numFmt = '#,##0';
+                row.getCell(13).numFmt = '#,##0';
                 
-                // Parking SF format
-                row.getCell(10).numFmt = '#,##0';
+                // Format GSF (col 14)
+                row.getCell(14).numFmt = '#,##0';
                 
-                // Calc Cars Formula
+                // Format Construction GSF (col 15)
+                row.getCell(15).numFmt = '#,##0';
+                
+                // Format Efficiency as percentage (col 16)
+                if (floor.use === 'Residential') {
+                    row.getCell(16).numFmt = '0%';
+                }
+                
+                // RSF Formula (col 17) - sum of all residential areas * efficiency
+                let rsfFormulaParts = [];
+                if (floor.use === 'Residential' && floor.countsInGSF) {
+                    rsfFormulaParts.push(`E${rowNum}`);
+                }
+                if (au1 && au1.use === 'Residential' && au1.countsInGSF && au1.sf > 0) {
+                    rsfFormulaParts.push(`G${rowNum}`);
+                }
+                if (au2 && au2.use === 'Residential' && au2.countsInGSF && au2.sf > 0) {
+                    rsfFormulaParts.push(`I${rowNum}`);
+                }
+                if (au3 && au3.use === 'Residential' && au3.countsInGSF && au3.sf > 0) {
+                    rsfFormulaParts.push(`K${rowNum}`);
+                }
+                if (au4 && au4.use === 'Residential' && au4.countsInGSF && au4.sf > 0) {
+                    rsfFormulaParts.push(`M${rowNum}`);
+                }
+                if (rsfFormulaParts.length > 0) {
+                    row.getCell(17).value = { formula: `(${rsfFormulaParts.join('+')})*P${rowNum}` };
+                }
+                row.getCell(17).numFmt = '#,##0';
+                
+                // Parking SF format (col 18)
+                row.getCell(18).numFmt = '#,##0';
+                
+                // Calc Cars Formula (col 19)
                 if (parkingSF > 0) {
-                    row.getCell(11).value = { formula: `IF(J${rowNum}>0,INT(J${rowNum}/${state.sfPerCar}),"")` };
+                    row.getCell(19).value = { formula: `IF(R${rowNum}>0,INT(R${rowNum}/${state.sfPerCar}),"")` };
                 }
                 
                 rowNum++;
@@ -2213,26 +2329,39 @@
                 'TOTALS',
                 { formula: `COUNTA(B${firstDataRow}:B${lastDataRow}) & " Floors"` },
                 '',
-                { formula: `SUM(D${firstDataRow}:D${lastDataRow})` },
-                { formula: `SUM(E${firstDataRow}:E${lastDataRow})` },
-                '',
-                { formula: `SUM(G${firstDataRow}:G${lastDataRow})` },
-                '',
-                { formula: `SUM(I${firstDataRow}:I${lastDataRow})` },
-                { formula: `SUM(J${firstDataRow}:J${lastDataRow})` },
-                { formula: `SUM(K${firstDataRow}:K${lastDataRow})` },
-                { formula: `SUM(L${firstDataRow}:L${lastDataRow})` }
+                { formula: `SUM(D${firstDataRow}:D${lastDataRow})` },  // Height
+                { formula: `SUM(E${firstDataRow}:E${lastDataRow})` },  // Primary Area
+                '',  // Add Use 1
+                { formula: `SUM(G${firstDataRow}:G${lastDataRow})` },  // Add Use 1 Area
+                '',  // Add Use 2
+                { formula: `SUM(I${firstDataRow}:I${lastDataRow})` },  // Add Use 2 Area
+                '',  // Add Use 3
+                { formula: `SUM(K${firstDataRow}:K${lastDataRow})` },  // Add Use 3 Area
+                '',  // Add Use 4
+                { formula: `SUM(M${firstDataRow}:M${lastDataRow})` },  // Add Use 4 Area
+                { formula: `SUM(N${firstDataRow}:N${lastDataRow})` },  // GSF
+                { formula: `SUM(O${firstDataRow}:O${lastDataRow})` },  // Construction GSF
+                '',  // Efficiency (not summed)
+                { formula: `SUM(Q${firstDataRow}:Q${lastDataRow})` },  // RSF
+                { formula: `SUM(R${firstDataRow}:R${lastDataRow})` },  // Parking SF
+                { formula: `SUM(S${firstDataRow}:S${lastDataRow})` },  // Calc Cars
+                { formula: `SUM(T${firstDataRow}:T${lastDataRow})` }   // Actual Cars Drawn
             ]);
             
             totalsRow.eachCell((cell, colNumber) => {
                 Object.assign(cell, totalStyle);
                 if (colNumber === 4) cell.numFmt = '0.00" ft"';
-                if (colNumber === 5) cell.numFmt = '#,##0" GSF"';
-                if (colNumber === 7) cell.numFmt = '#,##0" RSF"';
-                if (colNumber === 9) cell.numFmt = '#,##0" SF"';
-                if (colNumber === 10) cell.numFmt = '#,##0" SF"';
-                if (colNumber === 11) cell.numFmt = '#,##0" cars"';
-                if (colNumber === 12) cell.numFmt = '#,##0" cars"';
+                if (colNumber === 5) cell.numFmt = '#,##0';
+                if (colNumber === 7) cell.numFmt = '#,##0';
+                if (colNumber === 9) cell.numFmt = '#,##0';
+                if (colNumber === 11) cell.numFmt = '#,##0';
+                if (colNumber === 13) cell.numFmt = '#,##0';
+                if (colNumber === 14) cell.numFmt = '#,##0" GSF"';
+                if (colNumber === 15) cell.numFmt = '#,##0" SF"';
+                if (colNumber === 17) cell.numFmt = '#,##0" RSF"';
+                if (colNumber === 18) cell.numFmt = '#,##0" SF"';
+                if (colNumber === 19) cell.numFmt = '#,##0" cars"';
+                if (colNumber === 20) cell.numFmt = '#,##0" cars"';
             });
             
             const totalsRowNum = rowNum;
@@ -2243,18 +2372,18 @@
             rowNum++;
             
             // Add Overall Efficiency row
-            const effRow = worksheet.addRow(['', '', '', '', 'Overall Efficiency:', { formula: `IF(E${totalsRowNum}>0,G${totalsRowNum}/E${totalsRowNum},0)` }]);
-            effRow.getCell(6).numFmt = '0.0%';
-            effRow.getCell(5).font = { bold: true };
-            effRow.getCell(6).font = { bold: true };
+            const effRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', 'Overall Efficiency:', { formula: `IF(N${totalsRowNum}>0,Q${totalsRowNum}/N${totalsRowNum},0)` }]);
+            effRow.getCell(15).numFmt = '0.0%';
+            effRow.getCell(14).font = { bold: true };
+            effRow.getCell(15).font = { bold: true };
             rowNum++;
             
             // Add Delta to Goal row - using the efficiency goal from state
             const goalPercent = Math.round(state.efficiencyGoal * 100);
-            const deltaRow = worksheet.addRow(['', '', '', '', `Delta to ${goalPercent}%:`, { formula: `G${totalsRowNum}-(E${totalsRowNum}*${state.efficiencyGoal})` }]);
-            deltaRow.getCell(6).numFmt = '#,##0" RSF"';
-            deltaRow.getCell(5).font = { bold: true };
-            deltaRow.getCell(6).font = { bold: true };
+            const deltaRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', `Delta to ${goalPercent}%:`, { formula: `Q${totalsRowNum}-(N${totalsRowNum}*${state.efficiencyGoal})` }]);
+            deltaRow.getCell(15).numFmt = '#,##0" RSF"';
+            deltaRow.getCell(14).font = { bold: true };
+            deltaRow.getCell(15).font = { bold: true };
             rowNum += 2;
             
             // Add Parking Summary Section - moved to column B
@@ -2267,15 +2396,15 @@
             let requiredFormula = '';
             if (state.parkingMethod === 'beds') {
                 // Estimate beds from RSF (assumption: 1000 SF/unit, 1.8 beds/unit)
-                requiredFormula = `ROUND(G${totalsRowNum}/1000*1.8*${state.parkingRatio},0)`;
+                requiredFormula = `ROUND(Q${totalsRowNum}/1000*1.8*${state.parkingRatio},0)`;
             } else if (state.parkingMethod === 'units') {
-                requiredFormula = `ROUND(G${totalsRowNum}/1000*${state.parkingRatio},0)`;
+                requiredFormula = `ROUND(Q${totalsRowNum}/1000*${state.parkingRatio},0)`;
             } else {
                 requiredFormula = `${state.fixedParking}`;
             }
             
-            // Use Actual Cars total (column L) or Calc Cars (column K) if no actuals
-            const providedRow = worksheet.addRow(['', 'Parking Provided:', { formula: `IF(L${totalsRowNum}>0,L${totalsRowNum},K${totalsRowNum})` }]);
+            // Use Actual Cars total (column T) or Calc Cars (column S) if no actuals
+            const providedRow = worksheet.addRow(['', 'Parking Provided:', { formula: `IF(T${totalsRowNum}>0,T${totalsRowNum},S${totalsRowNum})` }]);
             providedRow.getCell(3).numFmt = '#,##0" cars"';
             const providedRowNum = rowNum;
             rowNum++;
