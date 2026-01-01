@@ -414,20 +414,21 @@
         .preview-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
         }
 
         .preview-table th {
             background: var(--bg-accent);
             color: var(--text-light);
-            padding: 0.75rem 1rem;
+            padding: 0.5rem 0.5rem;
             text-align: left;
             font-weight: 600;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.03em;
             position: sticky;
             top: 0;
+            white-space: nowrap;
         }
 
         .preview-table th.number {
@@ -435,14 +436,15 @@
         }
 
         .preview-table td {
-            padding: 0.625rem 1rem;
+            padding: 0.375rem 0.5rem;
             border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
         }
 
         .preview-table td.number {
             text-align: right;
             font-family: 'Space Mono', monospace;
-            font-size: 0.8125rem;
+            font-size: 0.75rem;
         }
 
         .preview-table tr:last-child td {
@@ -886,6 +888,107 @@
         .form-group.half {
             flex: 1;
         }
+        
+        .form-group.quarter {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .form-group.quarter input {
+            text-align: center;
+            padding: 0.5rem 0.25rem;
+        }
+        
+        .form-group.quarter label {
+            font-size: 0.75rem;
+            text-align: center;
+            display: block;
+        }
+        
+        .unit-mix-defaults > label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .mix-total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8125rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .mix-total-row span:last-child {
+            font-family: 'Space Mono', monospace;
+            font-weight: 600;
+        }
+        
+        .mix-total-row span:last-child.warning {
+            color: var(--accent-orange);
+        }
+        
+        .mix-total-row span:last-child.error {
+            color: var(--accent-red);
+        }
+        
+        /* Unit mix in FTC */
+        .unit-mix-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--border-color);
+        }
+        
+        .unit-mix-section label.section-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+        
+        .unit-mix-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .unit-mix-grid .form-group {
+            margin-bottom: 0;
+        }
+        
+        .unit-mix-grid input {
+            text-align: center;
+            font-size: 0.8125rem;
+        }
+        
+        .unit-mix-grid label {
+            font-size: 0.7rem;
+            text-align: center;
+        }
+        
+        .unit-estimate {
+            margin-top: 0.75rem;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border-radius: var(--radius-sm);
+            font-size: 0.8125rem;
+        }
+        
+        .unit-estimate-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+        }
+        
+        .unit-estimate-row span:last-child {
+            font-family: 'Space Mono', monospace;
+            font-weight: 500;
+        }
 
         .radio-group.compact {
             flex-direction: row;
@@ -1236,6 +1339,68 @@
                 </div>
             </div>
 
+            <!-- Unit Mix Assumptions -->
+            <div class="sidebar-section compact">
+                <h3>Unit Mix Assumptions</h3>
+                <div class="form-group">
+                    <label for="avgUnitSize">Average Unit Size (SF)</label>
+                    <input type="number" id="avgUnitSize" value="900" min="100" max="5000" oninput="updateUnitMixSettings()">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-group">
+                        <input type="checkbox" id="useGranularSizes" onchange="toggleGranularSizes()">
+                        <span>Use sizes by unit type</span>
+                    </label>
+                </div>
+                <div id="granularSizesGroup" class="hidden">
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="studioSize">Studio SF</label>
+                            <input type="number" id="studioSize" value="500" min="100" oninput="updateUnitMixSettings()">
+                        </div>
+                        <div class="form-group half">
+                            <label for="oneBRSize">1BR SF</label>
+                            <input type="number" id="oneBRSize" value="750" min="100" oninput="updateUnitMixSettings()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="twoBRSize">2BR SF</label>
+                            <input type="number" id="twoBRSize" value="1000" min="100" oninput="updateUnitMixSettings()">
+                        </div>
+                        <div class="form-group half">
+                            <label for="penthouseSize">PH SF</label>
+                            <input type="number" id="penthouseSize" value="1800" min="100" oninput="updateUnitMixSettings()">
+                        </div>
+                    </div>
+                </div>
+                <div class="unit-mix-defaults">
+                    <label>Default Unit Mix %</label>
+                    <div class="form-row">
+                        <div class="form-group quarter">
+                            <label for="defaultStudio">Studios</label>
+                            <input type="number" id="defaultStudio" value="3" min="0" max="100" oninput="updateUnitMixSettings()">
+                        </div>
+                        <div class="form-group quarter">
+                            <label for="defaultOneBR">1BR</label>
+                            <input type="number" id="defaultOneBR" value="47" min="0" max="100" oninput="updateUnitMixSettings()">
+                        </div>
+                        <div class="form-group quarter">
+                            <label for="defaultTwoBR">2BR</label>
+                            <input type="number" id="defaultTwoBR" value="47" min="0" max="100" oninput="updateUnitMixSettings()">
+                        </div>
+                        <div class="form-group quarter">
+                            <label for="defaultPH">PH</label>
+                            <input type="number" id="defaultPH" value="3" min="0" max="100" oninput="updateUnitMixSettings()">
+                        </div>
+                    </div>
+                    <div class="mix-total-row">
+                        <span>Total:</span>
+                        <span id="mixTotalPercent">100%</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Parking Calculator -->
             <div class="sidebar-section compact">
                 <h3>Parking Calculator</h3>
@@ -1342,11 +1507,16 @@
                                 <th class="number">Area</th>
                                 <th class="number">GSF</th>
                                 <th class="number">Constr. GSF</th>
-                                <th class="number">Efficiency</th>
+                                <th class="number">Eff</th>
                                 <th class="number">RSF</th>
-                                <th class="number">Parking SF</th>
-                                <th class="number">Calc Cars</th>
-                                <th class="number">Actual Cars Drawn</th>
+                                <th class="number">Units</th>
+                                <th class="number">S</th>
+                                <th class="number">1BR</th>
+                                <th class="number">2BR</th>
+                                <th class="number">PH</th>
+                                <th class="number">Pkg SF</th>
+                                <th class="number">Calc</th>
+                                <th class="number">Actual</th>
                             </tr>
                         </thead>
                         <tbody id="previewTableBody">
@@ -1398,6 +1568,11 @@
             sfPerCar: 410,
             parkingMethod: 'beds',
             parkingRatio: 0.9,
+            // Unit Mix Global Defaults
+            avgUnitSize: 900,
+            useGranularSizes: false,
+            unitSizes: { studio: 500, oneBR: 750, twoBR: 1000, penthouse: 1800 },
+            defaultUnitMix: { studio: 3, oneBR: 47, twoBR: 47, penthouse: 3 },
             fixedParking: 150,
             defaultHeights: {
                 belowGrade: 10.0,
@@ -1711,6 +1886,53 @@
                             ` : ''}
                             
                             ${additionalUsesHTML}
+                            
+                            ${ft.use === 'Residential' ? (() => {
+                                const unitMix = getFloorTypeUnitMix(ft);
+                                const isPH = ft.name.toLowerCase().includes('penthouse') || ft.name.toLowerCase().includes('ph');
+                                const rsf = Math.round(ft.gsf * state.efficiency);
+                                const unitCounts = calculateUnitCounts(rsf * floorCount, unitMix, isPH);
+                                return `
+                                <div class="unit-mix-section">
+                                    <label class="section-label">Unit Mix ${isPH ? '(Penthouse)' : ''}</label>
+                                    <div class="unit-mix-grid">
+                                        <div class="form-group">
+                                            <label>Studios %</label>
+                                            <input type="number" value="${unitMix.studio}" min="0" max="100" 
+                                                ${isPH ? 'disabled' : ''} 
+                                                onchange="updateFloorTypeUnitMix(${index}, 'studio', parseInt(this.value))">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>1BR %</label>
+                                            <input type="number" value="${unitMix.oneBR}" min="0" max="100"
+                                                ${isPH ? 'disabled' : ''} 
+                                                onchange="updateFloorTypeUnitMix(${index}, 'oneBR', parseInt(this.value))">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>2BR %</label>
+                                            <input type="number" value="${unitMix.twoBR}" min="0" max="100"
+                                                ${isPH ? 'disabled' : ''} 
+                                                onchange="updateFloorTypeUnitMix(${index}, 'twoBR', parseInt(this.value))">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>PH %</label>
+                                            <input type="number" value="${unitMix.penthouse}" min="0" max="100"
+                                                ${isPH ? 'disabled' : ''} 
+                                                onchange="updateFloorTypeUnitMix(${index}, 'penthouse', parseInt(this.value))">
+                                        </div>
+                                    </div>
+                                    <div class="unit-estimate">
+                                        <div class="unit-estimate-row">
+                                            <span>Est. Units (${floorCount} floor${floorCount > 1 ? 's' : ''}):</span>
+                                            <span>${unitCounts.total}</span>
+                                        </div>
+                                        <div class="unit-estimate-row" style="font-size: 0.75rem; color: var(--text-secondary);">
+                                            <span>S: ${unitCounts.studio} | 1BR: ${unitCounts.oneBR} | 2BR: ${unitCounts.twoBR} | PH: ${unitCounts.penthouse}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                `;
+                            })() : ''}
                         </div>
                     </div>
                 `;
@@ -1859,8 +2081,16 @@
                 const displayOrder = sortedTypes.map(item => item.ft);
                 
                 // Remove from old display position and insert at new display position
+                // Handle the case where removing shifts indices
                 const [movedItem] = displayOrder.splice(fromDisplayIndex, 1);
-                displayOrder.splice(toDisplayIndex, 0, movedItem);
+                
+                // Adjust toDisplayIndex if we removed from before it
+                let adjustedToIndex = toDisplayIndex;
+                if (fromDisplayIndex < toDisplayIndex) {
+                    adjustedToIndex = toDisplayIndex - 1;
+                }
+                
+                displayOrder.splice(adjustedToIndex, 0, movedItem);
                 
                 // Reverse to get array order (basement first, roof last)
                 state.floorTypes = displayOrder.reverse();
@@ -2019,6 +2249,10 @@
             let totalParkingSF = 0;
             let totalBeds = 0;
             let totalUnits = 0;
+            let totalStudios = 0;
+            let totalOneBR = 0;
+            let totalTwoBR = 0;
+            let totalPH = 0;
             let totalCalcCars = 0;
             let totalActualCars = 0;
             
@@ -2082,6 +2316,16 @@
                 const calcCars = parkingSF > 0 ? Math.floor(parkingSF / state.sfPerCar) : 0;
                 const actualCars = floor.actualCars || 0;
                 
+                // Calculate unit counts for this floor
+                let floorUnits = { studio: 0, oneBR: 0, twoBR: 0, penthouse: 0, total: 0 };
+                if (totalRSFForFloor > 0) {
+                    const isPH = floor.typeName.toLowerCase().includes('penthouse') || 
+                                floor.typeName.toLowerCase().includes('ph');
+                    const ft = state.floorTypes.find(f => f.name === floor.typeName);
+                    const unitMix = ft ? getFloorTypeUnitMix(ft) : state.defaultUnitMix;
+                    floorUnits = calculateUnitCounts(totalRSFForFloor, unitMix, isPH);
+                }
+                
                 // Always count the floor
                 totalFloors++;
                 totalHeight += height;
@@ -2095,14 +2339,16 @@
                 totalParking += actualCars > 0 ? actualCars : calcCars;
                 totalParkingSF += parkingSF;
                 
-                // Estimate beds/units for residential
-                if (totalRSFForFloor > 0) {
-                    const avgUnitSize = 1000; // Assumption
-                    const unitsOnFloor = Math.round(totalRSFForFloor / avgUnitSize);
-                    const bedsOnFloor = Math.round(unitsOnFloor * 1.8); // Assumption: avg 1.8 beds/unit
-                    totalBeds += bedsOnFloor;
-                    totalUnits += unitsOnFloor;
-                }
+                // Accumulate unit counts
+                totalUnits += floorUnits.total;
+                totalStudios = (totalStudios || 0) + floorUnits.studio;
+                totalOneBR = (totalOneBR || 0) + floorUnits.oneBR;
+                totalTwoBR = (totalTwoBR || 0) + floorUnits.twoBR;
+                totalPH = (totalPH || 0) + floorUnits.penthouse;
+                
+                // Estimate beds for parking calculation (Studios=1, 1BR=1, 2BR=2, PH=3)
+                const bedsOnFloor = floorUnits.studio + floorUnits.oneBR + (floorUnits.twoBR * 2) + (floorUnits.penthouse * 3);
+                totalBeds += bedsOnFloor;
                 
                 const isBelowGrade = floor.label.toUpperCase().startsWith('B');
                 const resiShade = floor.use === 'Residential' && resiTypeShadeMap[floor.typeName] ? ` resi-shade-${resiTypeShadeMap[floor.typeName]}` : '';
@@ -2119,6 +2365,11 @@
                         <td class="number">${formatNumber(floorConstructionGSF)}</td>
                         <td class="number">${floor.use === 'Residential' ? Math.round(efficiency * 100) + '%' : '-'}</td>
                         <td class="number">${totalRSFForFloor > 0 ? formatNumber(totalRSFForFloor) : '-'}</td>
+                        <td class="number">${floorUnits.total > 0 ? floorUnits.total : '-'}</td>
+                        <td class="number">${floorUnits.studio > 0 ? floorUnits.studio : '-'}</td>
+                        <td class="number">${floorUnits.oneBR > 0 ? floorUnits.oneBR : '-'}</td>
+                        <td class="number">${floorUnits.twoBR > 0 ? floorUnits.twoBR : '-'}</td>
+                        <td class="number">${floorUnits.penthouse > 0 ? floorUnits.penthouse : '-'}</td>
                         <td class="number">${parkingSF > 0 ? formatNumber(parkingSF) : '-'}</td>
                         <td class="number">${calcCars > 0 ? calcCars : '-'}</td>
                         <td class="number">${floor.actualCars ? floor.actualCars : '-'}</td>
@@ -2138,9 +2389,14 @@
                     <td class="number">${formatNumber(totalConstructionGSF)} SF</td>
                     <td class="number">${overallEfficiency.toFixed(1)}%</td>
                     <td class="number">${formatNumber(totalRSF)} RSF</td>
+                    <td class="number">${totalUnits}</td>
+                    <td class="number">${totalStudios}</td>
+                    <td class="number">${totalOneBR}</td>
+                    <td class="number">${totalTwoBR}</td>
+                    <td class="number">${totalPH}</td>
                     <td class="number">${formatNumber(totalParkingSF)} SF</td>
-                    <td class="number">${totalCalcCars} cars</td>
-                    <td class="number">${totalActualCars > 0 ? totalActualCars + ' cars' : '-'}</td>
+                    <td class="number">${totalCalcCars}</td>
+                    <td class="number">${totalActualCars > 0 ? totalActualCars : '-'}</td>
                 </tr>
             `;
             
@@ -2236,6 +2492,17 @@
             updatePreview();
         }
 
+        // Update unit mix for a specific floor type
+        function updateFloorTypeUnitMix(index, field, value) {
+            if (!state.floorTypes[index].customUnitMix) {
+                // Copy global defaults as starting point
+                state.floorTypes[index].customUnitMix = { ...state.defaultUnitMix };
+            }
+            state.floorTypes[index].customUnitMix[field] = value || 0;
+            renderFloorTypes();
+            updatePreview();
+        }
+
         // Select additional use from dropdown
         function selectAdditionalUse(floorIndex, useIndex, value) {
             if (value === '') {
@@ -2324,6 +2591,102 @@
             deltaEl.textContent = (deltaToFAR >= 0 ? '+' : '') + formatNumber(deltaToFAR) + ' SF';
             deltaEl.classList.remove('positive', 'negative');
             deltaEl.classList.add(deltaToFAR <= 0 ? 'positive' : 'negative');
+        }
+
+        // Unit Mix Functions
+        function updateUnitMixSettings() {
+            state.avgUnitSize = parseInt(document.getElementById('avgUnitSize').value) || 900;
+            
+            if (state.useGranularSizes) {
+                state.unitSizes = {
+                    studio: parseInt(document.getElementById('studioSize').value) || 500,
+                    oneBR: parseInt(document.getElementById('oneBRSize').value) || 750,
+                    twoBR: parseInt(document.getElementById('twoBRSize').value) || 1000,
+                    penthouse: parseInt(document.getElementById('penthouseSize').value) || 1800
+                };
+            }
+            
+            state.defaultUnitMix = {
+                studio: parseInt(document.getElementById('defaultStudio').value) || 0,
+                oneBR: parseInt(document.getElementById('defaultOneBR').value) || 0,
+                twoBR: parseInt(document.getElementById('defaultTwoBR').value) || 0,
+                penthouse: parseInt(document.getElementById('defaultPH').value) || 0
+            };
+            
+            // Update total percentage display
+            const total = state.defaultUnitMix.studio + state.defaultUnitMix.oneBR + 
+                         state.defaultUnitMix.twoBR + state.defaultUnitMix.penthouse;
+            const totalEl = document.getElementById('mixTotalPercent');
+            totalEl.textContent = total + '%';
+            totalEl.classList.remove('warning', 'error');
+            if (total !== 100) {
+                totalEl.classList.add(Math.abs(total - 100) <= 5 ? 'warning' : 'error');
+            }
+            
+            renderFloorTypes();
+            updatePreview();
+        }
+        
+        function toggleGranularSizes() {
+            state.useGranularSizes = document.getElementById('useGranularSizes').checked;
+            const granularGroup = document.getElementById('granularSizesGroup');
+            if (state.useGranularSizes) {
+                granularGroup.classList.remove('hidden');
+            } else {
+                granularGroup.classList.add('hidden');
+            }
+            updatePreview();
+        }
+        
+        // Calculate unit counts for a floor based on RSF and unit mix
+        function calculateUnitCounts(rsf, unitMix, isPenthouse = false) {
+            if (rsf <= 0) return { studio: 0, oneBR: 0, twoBR: 0, penthouse: 0, total: 0 };
+            
+            // For penthouse floors, force 100% PH
+            const mix = isPenthouse ? { studio: 0, oneBR: 0, twoBR: 0, penthouse: 100 } : unitMix;
+            
+            let units = { studio: 0, oneBR: 0, twoBR: 0, penthouse: 0, total: 0 };
+            
+            if (state.useGranularSizes) {
+                // Calculate units per type based on RSF allocation and type-specific sizes
+                const studioRSF = rsf * (mix.studio / 100);
+                const oneBRRSF = rsf * (mix.oneBR / 100);
+                const twoBRRSF = rsf * (mix.twoBR / 100);
+                const penthouseRSF = rsf * (mix.penthouse / 100);
+                
+                units.studio = Math.round(studioRSF / state.unitSizes.studio);
+                units.oneBR = Math.round(oneBRRSF / state.unitSizes.oneBR);
+                units.twoBR = Math.round(twoBRRSF / state.unitSizes.twoBR);
+                units.penthouse = Math.round(penthouseRSF / state.unitSizes.penthouse);
+            } else {
+                // Use average unit size for total, then distribute by percentage
+                const totalUnits = Math.round(rsf / state.avgUnitSize);
+                units.studio = Math.round(totalUnits * (mix.studio / 100));
+                units.oneBR = Math.round(totalUnits * (mix.oneBR / 100));
+                units.twoBR = Math.round(totalUnits * (mix.twoBR / 100));
+                units.penthouse = Math.round(totalUnits * (mix.penthouse / 100));
+            }
+            
+            units.total = units.studio + units.oneBR + units.twoBR + units.penthouse;
+            return units;
+        }
+        
+        // Get the unit mix for a floor type (custom or default)
+        function getFloorTypeUnitMix(ft) {
+            // Check if this is a penthouse floor type
+            const isPenthouse = ft.name.toLowerCase().includes('penthouse') || 
+                               ft.name.toLowerCase().includes('ph');
+            
+            if (isPenthouse) {
+                return { studio: 0, oneBR: 0, twoBR: 0, penthouse: 100 };
+            }
+            
+            // Use custom mix if defined, otherwise use global defaults
+            if (ft.customUnitMix) {
+                return ft.customUnitMix;
+            }
+            
+            return { ...state.defaultUnitMix };
         }
 
         function updateParkingMethod() {
@@ -2475,25 +2838,25 @@
             };
             
             // Add project header section
-            worksheet.mergeCells('A1:M1');
+            worksheet.mergeCells('A1:R1');
             const titleCell = worksheet.getCell('A1');
             titleCell.value = state.projectName;
             titleCell.font = { bold: true, size: 16 };
             titleCell.alignment = { horizontal: 'left' };
             
-            worksheet.mergeCells('A2:M2');
+            worksheet.mergeCells('A2:R2');
             const cityCell = worksheet.getCell('A2');
             cityCell.value = state.projectCity;
             cityCell.font = { size: 12 };
             cityCell.alignment = { horizontal: 'left' };
             
-            worksheet.mergeCells('A3:M3');
+            worksheet.mergeCells('A3:R3');
             const projectNumCell = worksheet.getCell('A3');
             projectNumCell.value = `HKS Project# ${state.projectNumber}`;
             projectNumCell.font = { size: 11 };
             projectNumCell.alignment = { horizontal: 'left' };
             
-            worksheet.mergeCells('A4:M4');
+            worksheet.mergeCells('A4:R4');
             const dateCell = worksheet.getCell('A4');
             const today = new Date();
             const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -2503,11 +2866,11 @@
             
             worksheet.addRow([]);
             
-            // New column order: Height, Floor, Constr GSF, Resi, Amenity, Parking, BOH/Mech, Retail, GSF, Efficiency, RSF, Calc Cars, Actual Cars
+            // New column order: Height, Floor, Constr GSF, Resi, Amenity, Parking, BOH/Mech, Retail, GSF, Efficiency, RSF, Units, S, 1BR, 2BR, PH, Calc Cars, Actual Cars
             const headers = [
                 'Height', 'Floor', 'Construction GSF', 
                 'Residential', 'Amenity', 'Parking', 'BOH/Mechanical', 'Retail',
-                'GSF', 'Efficiency', 'RSF', 'Calc Cars', 'Actual Cars Drawn'
+                'GSF', 'Efficiency', 'RSF', 'Units', 'S', '1BR', '2BR', 'PH', 'Calc Cars', 'Actual Cars'
             ];
             worksheet.getRow(6).values = headers;
             worksheet.getRow(6).eachCell((cell) => {
@@ -2517,19 +2880,24 @@
             worksheet.addRow([]);
             
             worksheet.columns = [
-                { width: 12 },  // Height
-                { width: 10 },  // Floor
-                { width: 16 },  // Construction GSF
-                { width: 14 },  // Residential
-                { width: 12 },  // Amenity
-                { width: 12 },  // Parking
-                { width: 14 },  // BOH/Mechanical
-                { width: 12 },  // Retail
-                { width: 12 },  // GSF
-                { width: 12 },  // Efficiency
-                { width: 12 },  // RSF
-                { width: 12 },  // Calc Cars
-                { width: 16 }   // Actual Cars Drawn
+                { width: 10 },  // A - Height
+                { width: 8 },   // B - Floor
+                { width: 14 },  // C - Construction GSF
+                { width: 12 },  // D - Residential
+                { width: 10 },  // E - Amenity
+                { width: 10 },  // F - Parking
+                { width: 12 },  // G - BOH/Mechanical
+                { width: 10 },  // H - Retail
+                { width: 10 },  // I - GSF
+                { width: 8 },   // J - Efficiency
+                { width: 10 },  // K - RSF
+                { width: 6 },   // L - Units
+                { width: 5 },   // M - S
+                { width: 5 },   // N - 1BR
+                { width: 5 },   // O - 2BR
+                { width: 5 },   // P - PH
+                { width: 8 },   // Q - Calc Cars
+                { width: 10 }   // R - Actual Cars
             ];
             
             const allFloors = generateAllFloors();
@@ -2614,27 +2982,76 @@
                 const constructionGSF = Object.values(sfByUse).reduce((a, b) => a + b, 0);
                 const gsf = Object.values(gsfByUse).reduce((a, b) => a + b, 0);
                 const resiGSF = gsfByUse.Residential;
-                const rsf = Math.round(resiGSF * efficiency);
                 const parkingSF = sfByUse.Parking;
-                const calcCars = parkingSF > 0 ? Math.floor(parkingSF / state.sfPerCar) : 0;
+                
+                // Get unit mix for this floor type
+                const ft = state.floorTypes.find(f => f.name === floor.typeName);
+                const isPH = floor.typeName.toLowerCase().includes('penthouse') || 
+                            floor.typeName.toLowerCase().includes('ph');
+                const unitMix = ft ? getFloorTypeUnitMix(ft) : state.defaultUnitMix;
                 
                 const isBelowGrade = floor.label.toUpperCase().startsWith('B');
                 
+                // Add row with data and formulas
                 const row = worksheet.addRow([
-                    height,
-                    floor.label,
-                    constructionGSF,
-                    sfByUse.Residential || '',
-                    sfByUse.Amenity || '',
-                    sfByUse.Parking || '',
-                    sfByUse.Mechanical || '',
-                    sfByUse.Retail || '',
-                    gsf || '',
-                    resiGSF > 0 ? efficiency : '',
-                    rsf || '',
-                    calcCars || '',
-                    floor.actualCars || ''
+                    height,                              // A - Height
+                    floor.label,                         // B - Floor
+                    constructionGSF,                     // C - Construction GSF
+                    sfByUse.Residential || '',           // D - Residential
+                    sfByUse.Amenity || '',               // E - Amenity
+                    sfByUse.Parking || '',               // F - Parking
+                    sfByUse.Mechanical || '',            // G - BOH/Mechanical
+                    sfByUse.Retail || '',                // H - Retail
+                    gsf || '',                           // I - GSF
+                    resiGSF > 0 ? state.efficiency : '', // J - Efficiency
+                    '',                                  // K - RSF (will be formula)
+                    '',                                  // L - Units (will be formula or value)
+                    '',                                  // M - S
+                    '',                                  // N - 1BR
+                    '',                                  // O - 2BR
+                    '',                                  // P - PH
+                    '',                                  // Q - Calc Cars (will be formula)
+                    floor.actualCars || ''               // R - Actual Cars
                 ]);
+                
+                // Set RSF formula: =IF(D{row}>0, D{row}*J{row}, 0) - RSF = Residential GSF * Efficiency
+                if (resiGSF > 0) {
+                    row.getCell(11).value = { formula: `IF(D${rowNum}>0,ROUND(D${rowNum}*J${rowNum},0),0)` };
+                }
+                
+                // Set Unit formulas/values for residential floors
+                if (resiGSF > 0) {
+                    if (state.useGranularSizes) {
+                        // Calculate units by RSF allocation per type - use hard-coded mix percentages
+                        const studioSF = state.unitSizes.studio;
+                        const oneBRSF = state.unitSizes.oneBR;
+                        const twoBRSF = state.unitSizes.twoBR;
+                        const penthouseSF = state.unitSizes.penthouse;
+                        
+                        // Studios formula: =ROUND(K{row}*mix%/size, 0)
+                        row.getCell(13).value = { formula: `IF(K${rowNum}>0,ROUND(K${rowNum}*${unitMix.studio/100}/${studioSF},0),0)` };
+                        row.getCell(14).value = { formula: `IF(K${rowNum}>0,ROUND(K${rowNum}*${unitMix.oneBR/100}/${oneBRSF},0),0)` };
+                        row.getCell(15).value = { formula: `IF(K${rowNum}>0,ROUND(K${rowNum}*${unitMix.twoBR/100}/${twoBRSF},0),0)` };
+                        row.getCell(16).value = { formula: `IF(K${rowNum}>0,ROUND(K${rowNum}*${unitMix.penthouse/100}/${penthouseSF},0),0)` };
+                        // Total units = sum of all types
+                        row.getCell(12).value = { formula: `M${rowNum}+N${rowNum}+O${rowNum}+P${rowNum}` };
+                    } else {
+                        // Use average unit size for total, then distribute
+                        const avgSize = state.avgUnitSize;
+                        // Total units: =ROUND(RSF/avgSize, 0)
+                        row.getCell(12).value = { formula: `IF(K${rowNum}>0,ROUND(K${rowNum}/${avgSize},0),0)` };
+                        // Type breakdown: =ROUND(Units*mix%, 0)
+                        row.getCell(13).value = { formula: `IF(L${rowNum}>0,ROUND(L${rowNum}*${unitMix.studio/100},0),0)` };
+                        row.getCell(14).value = { formula: `IF(L${rowNum}>0,ROUND(L${rowNum}*${unitMix.oneBR/100},0),0)` };
+                        row.getCell(15).value = { formula: `IF(L${rowNum}>0,ROUND(L${rowNum}*${unitMix.twoBR/100},0),0)` };
+                        row.getCell(16).value = { formula: `IF(L${rowNum}>0,ROUND(L${rowNum}*${unitMix.penthouse/100},0),0)` };
+                    }
+                }
+                
+                // Set Calc Cars formula: =IF(F{row}>0, FLOOR(F{row}/sfPerCar, 1), 0)
+                if (parkingSF > 0) {
+                    row.getCell(17).value = { formula: `IF(F${rowNum}>0,FLOOR(F${rowNum}/${state.sfPerCar},1),0)` };
+                }
                 
                 // Determine row color - residential gets gradient by TYPE, others use static colors
                 let rowColor;
@@ -2642,6 +3059,9 @@
                     rowColor = belowGradeColor;
                 } else if (floor.use === 'Residential' && resiTypeShadeMap[floor.typeName]) {
                     rowColor = resiGradient[resiTypeShadeMap[floor.typeName]];
+                } else if (floor.use === 'Parking') {
+                    // Match FTC parking color: #f3f4f6 → FFF3F4F6
+                    rowColor = 'FFF3F4F6';
                 } else {
                     rowColor = useColors[floor.use] || 'FFFFFFFF';
                 }
@@ -2659,16 +3079,23 @@
                 });
                 
                 // Format cells
-                row.getCell(1).numFmt = '0.00" ft"';
-                row.getCell(3).numFmt = '#,##0';
-                row.getCell(4).numFmt = '#,##0';
-                row.getCell(5).numFmt = '#,##0';
-                row.getCell(6).numFmt = '#,##0';
-                row.getCell(7).numFmt = '#,##0';
-                row.getCell(8).numFmt = '#,##0';
-                row.getCell(9).numFmt = '#,##0';
-                if (resiGSF > 0) row.getCell(10).numFmt = '0%';
-                row.getCell(11).numFmt = '#,##0';
+                row.getCell(1).numFmt = '0.00" ft"';  // A - Height
+                row.getCell(3).numFmt = '#,##0';      // C - Construction GSF
+                row.getCell(4).numFmt = '#,##0';      // D - Residential
+                row.getCell(5).numFmt = '#,##0';      // E - Amenity
+                row.getCell(6).numFmt = '#,##0';      // F - Parking
+                row.getCell(7).numFmt = '#,##0';      // G - BOH/Mech
+                row.getCell(8).numFmt = '#,##0';      // H - Retail
+                row.getCell(9).numFmt = '#,##0';      // I - GSF
+                if (resiGSF > 0) row.getCell(10).numFmt = '0%';  // J - Efficiency
+                row.getCell(11).numFmt = '#,##0';    // K - RSF
+                row.getCell(12).numFmt = '#,##0';    // L - Units
+                row.getCell(13).numFmt = '#,##0';    // M - S
+                row.getCell(14).numFmt = '#,##0';    // N - 1BR
+                row.getCell(15).numFmt = '#,##0';    // O - 2BR
+                row.getCell(16).numFmt = '#,##0';    // P - PH
+                row.getCell(17).numFmt = '#,##0';    // Q - Calc Cars
+                row.getCell(18).numFmt = '#,##0';    // R - Actual Cars
                 
                 rowNum++;
             });
@@ -2680,19 +3107,24 @@
             
             // Totals Row with formulas
             const totalsRow = worksheet.addRow([
-                { formula: `SUM(A${firstDataRow}:A${lastDataRow})` },
-                `${lastDataRow - firstDataRow + 1} Floors`,
-                { formula: `SUM(C${firstDataRow}:C${lastDataRow})` },
-                { formula: `SUM(D${firstDataRow}:D${lastDataRow})` },
-                { formula: `SUM(E${firstDataRow}:E${lastDataRow})` },
-                { formula: `SUM(F${firstDataRow}:F${lastDataRow})` },
-                { formula: `SUM(G${firstDataRow}:G${lastDataRow})` },
-                { formula: `SUM(H${firstDataRow}:H${lastDataRow})` },
-                { formula: `SUM(I${firstDataRow}:I${lastDataRow})` },
-                '',
-                { formula: `SUM(K${firstDataRow}:K${lastDataRow})` },
-                { formula: `SUM(L${firstDataRow}:L${lastDataRow})` },
-                { formula: `SUM(M${firstDataRow}:M${lastDataRow})` }
+                { formula: `SUM(A${firstDataRow}:A${lastDataRow})` },      // A - Height
+                `${lastDataRow - firstDataRow + 1} Floors`,                // B - Floor count
+                { formula: `SUM(C${firstDataRow}:C${lastDataRow})` },      // C - Construction GSF
+                { formula: `SUM(D${firstDataRow}:D${lastDataRow})` },      // D - Residential
+                { formula: `SUM(E${firstDataRow}:E${lastDataRow})` },      // E - Amenity
+                { formula: `SUM(F${firstDataRow}:F${lastDataRow})` },      // F - Parking
+                { formula: `SUM(G${firstDataRow}:G${lastDataRow})` },      // G - BOH/Mech
+                { formula: `SUM(H${firstDataRow}:H${lastDataRow})` },      // H - Retail
+                { formula: `SUM(I${firstDataRow}:I${lastDataRow})` },      // I - GSF
+                '',                                                         // J - Efficiency (blank for totals)
+                { formula: `SUM(K${firstDataRow}:K${lastDataRow})` },      // K - RSF
+                { formula: `SUM(L${firstDataRow}:L${lastDataRow})` },      // L - Units
+                { formula: `SUM(M${firstDataRow}:M${lastDataRow})` },      // M - S
+                { formula: `SUM(N${firstDataRow}:N${lastDataRow})` },      // N - 1BR
+                { formula: `SUM(O${firstDataRow}:O${lastDataRow})` },      // O - 2BR
+                { formula: `SUM(P${firstDataRow}:P${lastDataRow})` },      // P - PH
+                { formula: `SUM(Q${firstDataRow}:Q${lastDataRow})` },      // Q - Calc Cars
+                { formula: `SUM(R${firstDataRow}:R${lastDataRow})` }       // R - Actual Cars
             ]);
             
             totalsRow.eachCell((cell, colNumber) => {
@@ -2703,8 +3135,10 @@
                 if (colNumber >= 4 && colNumber <= 8) cell.numFmt = '#,##0';
                 if (colNumber === 9) cell.numFmt = '#,##0" GSF"';
                 if (colNumber === 11) cell.numFmt = '#,##0" RSF"';
-                if (colNumber === 12) cell.numFmt = '#,##0" cars"';
-                if (colNumber === 13) cell.numFmt = '#,##0" cars"';
+                if (colNumber === 12) cell.numFmt = '#,##0" units"';
+                if (colNumber >= 13 && colNumber <= 16) cell.numFmt = '#,##0';
+                if (colNumber === 17) cell.numFmt = '#,##0" cars"';
+                if (colNumber === 18) cell.numFmt = '#,##0" cars"';
             });
             
             const totalsRowNum = rowNum;
@@ -2755,16 +3189,20 @@
             rowNum++;
             
             // Row 1: Site SF | Parking Provided
+            // Parking required formula: use actual unit counts and bed calculation
+            // Beds = Studios(M)*1 + 1BR(N)*1 + 2BR(O)*2 + PH(P)*3
             let requiredFormula = '';
             if (state.parkingMethod === 'beds') {
-                requiredFormula = `ROUND(K${totalsRowNum}/1000*1.8*${state.parkingRatio},0)`;
+                // Use unit counts: Studios=1bed, 1BR=1bed, 2BR=2beds, PH=3beds
+                requiredFormula = `ROUND((M${totalsRowNum}+N${totalsRowNum}+O${totalsRowNum}*2+P${totalsRowNum}*3)*${state.parkingRatio},0)`;
             } else if (state.parkingMethod === 'units') {
-                requiredFormula = `ROUND(K${totalsRowNum}/1000*${state.parkingRatio},0)`;
+                requiredFormula = `ROUND(L${totalsRowNum}*${state.parkingRatio},0)`;
             } else {
                 requiredFormula = `${state.fixedParking}`;
             }
             
-            const row1 = worksheet.addRow(['', 'Site SF:', '', state.siteSF, '', '', 'Parking Provided:', '', { formula: `IF(M${totalsRowNum}>0,M${totalsRowNum},L${totalsRowNum})` }]);
+            // Parking Provided: IF actual cars > 0, use actual, else use calculated
+            const row1 = worksheet.addRow(['', 'Site SF:', '', state.siteSF, '', '', 'Parking Provided:', '', { formula: `IF(R${totalsRowNum}>0,R${totalsRowNum},Q${totalsRowNum})` }]);
             row1.getCell(2).alignment = { horizontal: 'left' };
             row1.getCell(4).numFmt = '#,##0" SF"';
             row1.getCell(4).alignment = { horizontal: 'left' };
@@ -2796,17 +3234,35 @@
             row3.getCell(9).alignment = { horizontal: 'left' };
             rowNum++;
             
-            // Row 4: Delta to FAR
-            const row4 = worksheet.addRow(['', 'Delta to FAR:', '', deltaToFAR]);
+            // Row 4: Delta to FAR | Parking Settings (moved here)
+            const row4 = worksheet.addRow(['', 'Delta to FAR:', '', deltaToFAR, '', '', `SF/Car: ${state.sfPerCar} | Method: ${state.parkingMethod} | Ratio: ${state.parkingRatio}`]);
             row4.getCell(2).alignment = { horizontal: 'left' };
             row4.getCell(4).numFmt = '#,##0" SF"';
             row4.getCell(4).font = { bold: true, color: { argb: deltaToFAR <= 0 ? 'FF16A34A' : 'FFDC2626' } };
             row4.getCell(4).alignment = { horizontal: 'left' };
+            row4.getCell(7).font = { italic: true, color: { argb: 'FF666666' } };
+            row4.getCell(7).alignment = { horizontal: 'left' };
+            rowNum++;
             
+            // Add Unit Mix Assumptions section
             rowNum += 2;
-            const notesRow = worksheet.addRow(['', `SF per Car: ${state.sfPerCar} SF | Parking Method: ${state.parkingMethod} | Ratio: ${state.parkingRatio}`]);
-            notesRow.getCell(2).font = { italic: true, color: { argb: 'FF666666' } };
-            notesRow.getCell(2).alignment = { horizontal: 'left' };
+            const assumptionsHeader = worksheet.addRow(['', 'UNIT MIX ASSUMPTIONS']);
+            assumptionsHeader.getCell(2).font = { bold: true, size: 12 };
+            assumptionsHeader.getCell(2).alignment = { horizontal: 'left' };
+            rowNum++;
+            
+            const avgSizeRow = worksheet.addRow(['', `Average Unit Size: ${state.avgUnitSize} SF`]);
+            avgSizeRow.getCell(2).alignment = { horizontal: 'left' };
+            rowNum++;
+            
+            if (state.useGranularSizes) {
+                const sizesRow = worksheet.addRow(['', `Unit Sizes: Studio ${state.unitSizes.studio} SF | 1BR ${state.unitSizes.oneBR} SF | 2BR ${state.unitSizes.twoBR} SF | PH ${state.unitSizes.penthouse} SF`]);
+                sizesRow.getCell(2).alignment = { horizontal: 'left' };
+                rowNum++;
+            }
+            
+            const mixRow = worksheet.addRow(['', `Default Mix: ${state.defaultUnitMix.studio}% Studios | ${state.defaultUnitMix.oneBR}% 1BR | ${state.defaultUnitMix.twoBR}% 2BR | ${state.defaultUnitMix.penthouse}% PH`]);
+            mixRow.getCell(2).alignment = { horizontal: 'left' };
             
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
