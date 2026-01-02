@@ -97,6 +97,25 @@
             max-height: calc(100vh - 80px);
             position: sticky;
             top: 80px;
+            min-width: 200px;
+            position: relative;
+        }
+        
+        .sidebar-resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            cursor: col-resize;
+            background: transparent;
+            transition: background 0.15s;
+            z-index: 10;
+        }
+        
+        .sidebar-resize-handle:hover,
+        .sidebar-resize-handle.dragging {
+            background: var(--accent-blue);
         }
 
         .sidebar-section {
@@ -313,6 +332,10 @@
             margin-bottom: 0.75rem;
             overflow: hidden;
             box-shadow: var(--shadow-sm);
+        }
+        
+        .floor-type-card.collapsed {
+            background: #ffffff;
         }
 
         .floor-type-header {
@@ -894,12 +917,19 @@
             min-width: 0;
         }
         
-        .form-group.quarter input {
+        .form-group.fifth {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .form-group.quarter input,
+        .form-group.fifth input {
             text-align: center;
             padding: 0.5rem 0.25rem;
         }
         
-        .form-group.quarter label {
+        .form-group.quarter label,
+        .form-group.fifth label {
             font-size: 0.75rem;
             text-align: center;
             display: block;
@@ -957,23 +987,29 @@
             gap: 0.375rem;
         }
         
+        .delta-grid.five-col {
+            grid-template-columns: repeat(5, 1fr);
+        }
+        
         .delta-item {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+            padding: 0.25rem;
             background: var(--bg-primary);
             border-radius: var(--radius-sm);
         }
         
         .delta-label {
             color: var(--text-secondary);
+            font-size: 0.65rem;
         }
         
         .delta-values {
             font-family: 'Space Mono', monospace;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
+            text-align: center;
         }
         
         .delta-value {
@@ -1013,6 +1049,10 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 0.5rem;
+        }
+        
+        .unit-mix-grid.five {
+            grid-template-columns: repeat(5, 1fr);
         }
         
         .unit-mix-grid.compact {
@@ -1321,7 +1361,8 @@
 
     <div class="main-container">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-resize-handle" id="sidebarResizeHandle"></div>
             <!-- Project Settings -->
             <div class="sidebar-section">
                 <h3>Project Information</h3>
@@ -1462,6 +1503,12 @@
                             <input type="number" id="twoBRSize" value="1000" min="100" oninput="updateUnitMixSettings()">
                         </div>
                         <div class="form-group half">
+                            <label for="threeBRSize">3BR SF</label>
+                            <input type="number" id="threeBRSize" value="1300" min="100" oninput="updateUnitMixSettings()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
                             <label for="penthouseSize">PH SF</label>
                             <input type="number" id="penthouseSize" value="1800" min="100" oninput="updateUnitMixSettings()">
                         </div>
@@ -1470,19 +1517,23 @@
                 <div class="unit-mix-defaults">
                     <label>Target Unit Mix %</label>
                     <div class="form-row">
-                        <div class="form-group quarter">
-                            <label for="targetStudio">Studios</label>
+                        <div class="form-group fifth">
+                            <label for="targetStudio">S</label>
                             <input type="number" id="targetStudio" value="3" min="0" max="100" oninput="updateUnitMixSettings()">
                         </div>
-                        <div class="form-group quarter">
+                        <div class="form-group fifth">
                             <label for="targetOneBR">1BR</label>
-                            <input type="number" id="targetOneBR" value="47" min="0" max="100" oninput="updateUnitMixSettings()">
+                            <input type="number" id="targetOneBR" value="40" min="0" max="100" oninput="updateUnitMixSettings()">
                         </div>
-                        <div class="form-group quarter">
+                        <div class="form-group fifth">
                             <label for="targetTwoBR">2BR</label>
-                            <input type="number" id="targetTwoBR" value="47" min="0" max="100" oninput="updateUnitMixSettings()">
+                            <input type="number" id="targetTwoBR" value="40" min="0" max="100" oninput="updateUnitMixSettings()">
                         </div>
-                        <div class="form-group quarter">
+                        <div class="form-group fifth">
+                            <label for="targetThreeBR">3BR</label>
+                            <input type="number" id="targetThreeBR" value="14" min="0" max="100" oninput="updateUnitMixSettings()">
+                        </div>
+                        <div class="form-group fifth">
                             <label for="targetPH">PH</label>
                             <input type="number" id="targetPH" value="3" min="0" max="100" oninput="updateUnitMixSettings()">
                         </div>
@@ -1494,9 +1545,9 @@
                 </div>
                 <div class="unit-mix-delta">
                     <label>Actual vs Target</label>
-                    <div class="delta-grid">
+                    <div class="delta-grid five-col">
                         <div class="delta-item">
-                            <span class="delta-label">Studios</span>
+                            <span class="delta-label">S</span>
                             <span class="delta-values"><span id="actualStudioPct">0%</span> <span id="deltaStudio" class="delta-value">+0%</span></span>
                         </div>
                         <div class="delta-item">
@@ -1506,6 +1557,10 @@
                         <div class="delta-item">
                             <span class="delta-label">2BR</span>
                             <span class="delta-values"><span id="actualTwoBRPct">0%</span> <span id="deltaTwoBR" class="delta-value">+0%</span></span>
+                        </div>
+                        <div class="delta-item">
+                            <span class="delta-label">3BR</span>
+                            <span class="delta-values"><span id="actualThreeBRPct">0%</span> <span id="deltaThreeBR" class="delta-value">+0%</span></span>
                         </div>
                         <div class="delta-item">
                             <span class="delta-label">PH</span>
@@ -1627,6 +1682,7 @@
                                 <th class="number">S</th>
                                 <th class="number">1BR</th>
                                 <th class="number">2BR</th>
+                                <th class="number">3BR</th>
                                 <th class="number">PH</th>
                                 <th class="number">Pkg SF</th>
                                 <th class="number">Calc</th>
@@ -1685,8 +1741,8 @@
             // Unit Mix Global Defaults
             avgUnitSize: 900,
             useGranularSizes: false,
-            unitSizes: { studio: 500, oneBR: 750, twoBR: 1000, penthouse: 1800 },
-            targetUnitMix: { studio: 3, oneBR: 47, twoBR: 47, penthouse: 3 },
+            unitSizes: { studio: 500, oneBR: 750, twoBR: 1000, threeBR: 1300, penthouse: 1800 },
+            targetUnitMix: { studio: 3, oneBR: 40, twoBR: 40, threeBR: 14, penthouse: 3 },
             fixedParking: 150,
             defaultHeights: {
                 belowGrade: 10.0,
@@ -1872,7 +1928,7 @@
                 const floorCount = countFloorsInRange(ft.startFloor, ft.endFloor);
                 
                 const card = document.createElement('div');
-                card.className = `floor-type-card ${ft.expanded ? 'expanded' : ''}`;
+                card.className = `floor-type-card ${ft.expanded ? 'expanded' : 'collapsed'}`;
                 card.dataset.index = index;
                 card.dataset.displayIndex = displayIndex;
                 
@@ -1900,10 +1956,10 @@
                             if (au.use === 'Residential') {
                                 const auRSF = Math.round((au.sf || 0) * state.efficiency);
                                 const auUnitCounts = au.unitCounts || calculateDefaultUnitCounts(auRSF, false);
-                                const auTotalUnits = auUnitCounts.studio + auUnitCounts.oneBR + auUnitCounts.twoBR + auUnitCounts.penthouse;
+                                const auTotalUnits = auUnitCounts.studio + auUnitCounts.oneBR + auUnitCounts.twoBR + (auUnitCounts.threeBR || 0) + auUnitCounts.penthouse;
                                 resiUnitsHTML = `
                                 <div class="additional-resi-units">
-                                    <div class="unit-mix-grid compact">
+                                    <div class="unit-mix-grid compact five">
                                         <div class="form-group">
                                             <label>S</label>
                                             <input type="number" value="${auUnitCounts.studio}" min="0" 
@@ -1918,6 +1974,11 @@
                                             <label>2BR</label>
                                             <input type="number" value="${auUnitCounts.twoBR}" min="0"
                                                 onchange="updateAdditionalUseUnitCount(${index}, ${i}, 'twoBR', parseInt(this.value) || 0)">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>3BR</label>
+                                            <input type="number" value="${auUnitCounts.threeBR || 0}" min="0"
+                                                onchange="updateAdditionalUseUnitCount(${index}, ${i}, 'threeBR', parseInt(this.value) || 0)">
                                         </div>
                                         <div class="form-group">
                                             <label>PH</label>
@@ -2047,13 +2108,13 @@
                                 const rsf = Math.round(ft.gsf * state.efficiency);
                                 // Get unit counts per floor (or calculate defaults if not set)
                                 const unitCounts = ft.unitCounts || calculateDefaultUnitCounts(rsf, isPH);
-                                const totalUnits = unitCounts.studio + unitCounts.oneBR + unitCounts.twoBR + unitCounts.penthouse;
+                                const totalUnits = unitCounts.studio + unitCounts.oneBR + unitCounts.twoBR + (unitCounts.threeBR || 0) + unitCounts.penthouse;
                                 return `
                                 <div class="unit-mix-section">
                                     <label class="section-label">Units per Floor ${isPH ? '(Penthouse)' : ''}</label>
-                                    <div class="unit-mix-grid">
+                                    <div class="unit-mix-grid five">
                                         <div class="form-group">
-                                            <label>Studios</label>
+                                            <label>S</label>
                                             <input type="number" value="${unitCounts.studio}" min="0" 
                                                 onchange="updateFloorTypeUnitCount(${index}, 'studio', parseInt(this.value) || 0)">
                                         </div>
@@ -2066,6 +2127,11 @@
                                             <label>2BR</label>
                                             <input type="number" value="${unitCounts.twoBR}" min="0"
                                                 onchange="updateFloorTypeUnitCount(${index}, 'twoBR', parseInt(this.value) || 0)">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>3BR</label>
+                                            <input type="number" value="${unitCounts.threeBR || 0}" min="0"
+                                                onchange="updateFloorTypeUnitCount(${index}, 'threeBR', parseInt(this.value) || 0)">
                                         </div>
                                         <div class="form-group">
                                             <label>PH</label>
@@ -2406,6 +2472,7 @@
             let totalStudios = 0;
             let totalOneBR = 0;
             let totalTwoBR = 0;
+            let totalThreeBR = 0;
             let totalPH = 0;
             let totalCalcCars = 0;
             let totalActualCars = 0;
@@ -2477,7 +2544,7 @@
                 const actualCars = floor.actualCars || 0;
                 
                 // Get unit counts for this floor from floor type (primary use)
-                let floorUnits = { studio: 0, oneBR: 0, twoBR: 0, penthouse: 0 };
+                let floorUnits = { studio: 0, oneBR: 0, twoBR: 0, threeBR: 0, penthouse: 0 };
                 if (ft && ft.use === 'Residential') {
                     floorUnits = getFloorTypeUnitCounts(ft);
                 }
@@ -2489,11 +2556,12 @@
                             floorUnits.studio += au.unitCounts.studio || 0;
                             floorUnits.oneBR += au.unitCounts.oneBR || 0;
                             floorUnits.twoBR += au.unitCounts.twoBR || 0;
+                            floorUnits.threeBR += au.unitCounts.threeBR || 0;
                             floorUnits.penthouse += au.unitCounts.penthouse || 0;
                         }
                     });
                 }
-                const floorUnitTotal = floorUnits.studio + floorUnits.oneBR + floorUnits.twoBR + floorUnits.penthouse;
+                const floorUnitTotal = floorUnits.studio + floorUnits.oneBR + floorUnits.twoBR + floorUnits.threeBR + floorUnits.penthouse;
                 
                 // Always count the floor
                 totalFloors++;
@@ -2513,10 +2581,11 @@
                 totalStudios = (totalStudios || 0) + floorUnits.studio;
                 totalOneBR = (totalOneBR || 0) + floorUnits.oneBR;
                 totalTwoBR = (totalTwoBR || 0) + floorUnits.twoBR;
+                totalThreeBR = (totalThreeBR || 0) + floorUnits.threeBR;
                 totalPH = (totalPH || 0) + floorUnits.penthouse;
                 
-                // Estimate beds for parking calculation (Studios=1, 1BR=1, 2BR=2, PH=3)
-                const bedsOnFloor = floorUnits.studio + floorUnits.oneBR + (floorUnits.twoBR * 2) + (floorUnits.penthouse * 3);
+                // Estimate beds for parking calculation (Studios=1, 1BR=1, 2BR=2, 3BR=3, PH=3)
+                const bedsOnFloor = floorUnits.studio + floorUnits.oneBR + (floorUnits.twoBR * 2) + (floorUnits.threeBR * 3) + (floorUnits.penthouse * 3);
                 totalBeds += bedsOnFloor;
                 
                 const isBelowGrade = floor.label.toUpperCase().startsWith('B');
@@ -2538,6 +2607,7 @@
                         <td class="number">${floorUnits.studio > 0 ? floorUnits.studio : '-'}</td>
                         <td class="number">${floorUnits.oneBR > 0 ? floorUnits.oneBR : '-'}</td>
                         <td class="number">${floorUnits.twoBR > 0 ? floorUnits.twoBR : '-'}</td>
+                        <td class="number">${floorUnits.threeBR > 0 ? floorUnits.threeBR : '-'}</td>
                         <td class="number">${floorUnits.penthouse > 0 ? floorUnits.penthouse : '-'}</td>
                         <td class="number">${parkingSF > 0 ? formatNumber(parkingSF) : '-'}</td>
                         <td class="number">${calcCars > 0 ? calcCars : '-'}</td>
@@ -2562,6 +2632,7 @@
                     <td class="number">${totalStudios}</td>
                     <td class="number">${totalOneBR}</td>
                     <td class="number">${totalTwoBR}</td>
+                    <td class="number">${totalThreeBR}</td>
                     <td class="number">${totalPH}</td>
                     <td class="number">${formatNumber(totalParkingSF)} SF</td>
                     <td class="number">${totalCalcCars}</td>
@@ -2599,22 +2670,23 @@
             surplusEl.className = `parking-stat-value ${parkingSurplus >= 0 ? 'surplus' : 'deficit'}`;
             
             // Update unit mix delta display
-            updateUnitMixDeltas(totalUnits, totalStudios, totalOneBR, totalTwoBR, totalPH);
+            updateUnitMixDeltas(totalUnits, totalStudios, totalOneBR, totalTwoBR, totalThreeBR, totalPH);
             
             // Update site data calculations
             updateSiteCalcs(totalGSF);
         }
         
         // Update the sidebar unit mix delta display
-        function updateUnitMixDeltas(totalUnits, studios, oneBR, twoBR, ph) {
+        function updateUnitMixDeltas(totalUnits, studios, oneBR, twoBR, threeBR, ph) {
             if (totalUnits === 0) {
                 // No units, show zeros
                 document.getElementById('actualStudioPct').textContent = '0%';
                 document.getElementById('actualOneBRPct').textContent = '0%';
                 document.getElementById('actualTwoBRPct').textContent = '0%';
+                document.getElementById('actualThreeBRPct').textContent = '0%';
                 document.getElementById('actualPHPct').textContent = '0%';
                 
-                ['deltaStudio', 'deltaOneBR', 'deltaTwoBR', 'deltaPH'].forEach(id => {
+                ['deltaStudio', 'deltaOneBR', 'deltaTwoBR', 'deltaThreeBR', 'deltaPH'].forEach(id => {
                     const el = document.getElementById(id);
                     el.textContent = '+0%';
                     el.className = 'delta-value neutral';
@@ -2626,18 +2698,21 @@
             const actualStudio = Math.round((studios / totalUnits) * 100);
             const actualOneBR = Math.round((oneBR / totalUnits) * 100);
             const actualTwoBR = Math.round((twoBR / totalUnits) * 100);
+            const actualThreeBR = Math.round((threeBR / totalUnits) * 100);
             const actualPH = Math.round((ph / totalUnits) * 100);
             
             // Calculate deltas
             const deltaStudio = actualStudio - state.targetUnitMix.studio;
             const deltaOneBR = actualOneBR - state.targetUnitMix.oneBR;
             const deltaTwoBR = actualTwoBR - state.targetUnitMix.twoBR;
+            const deltaThreeBR = actualThreeBR - state.targetUnitMix.threeBR;
             const deltaPH = actualPH - state.targetUnitMix.penthouse;
             
             // Update display
             document.getElementById('actualStudioPct').textContent = actualStudio + '%';
             document.getElementById('actualOneBRPct').textContent = actualOneBR + '%';
             document.getElementById('actualTwoBRPct').textContent = actualTwoBR + '%';
+            document.getElementById('actualThreeBRPct').textContent = actualThreeBR + '%';
             document.getElementById('actualPHPct').textContent = actualPH + '%';
             
             // Update delta values with color coding
@@ -2650,6 +2725,7 @@
             updateDelta('deltaStudio', deltaStudio);
             updateDelta('deltaOneBR', deltaOneBR);
             updateDelta('deltaTwoBR', deltaTwoBR);
+            updateDelta('deltaThreeBR', deltaThreeBR);
             updateDelta('deltaPH', deltaPH);
         }
 
@@ -2823,6 +2899,7 @@
                     studio: parseInt(document.getElementById('studioSize').value) || 500,
                     oneBR: parseInt(document.getElementById('oneBRSize').value) || 750,
                     twoBR: parseInt(document.getElementById('twoBRSize').value) || 1000,
+                    threeBR: parseInt(document.getElementById('threeBRSize').value) || 1300,
                     penthouse: parseInt(document.getElementById('penthouseSize').value) || 1800
                 };
             }
@@ -2831,12 +2908,13 @@
                 studio: parseInt(document.getElementById('targetStudio').value) || 0,
                 oneBR: parseInt(document.getElementById('targetOneBR').value) || 0,
                 twoBR: parseInt(document.getElementById('targetTwoBR').value) || 0,
+                threeBR: parseInt(document.getElementById('targetThreeBR').value) || 0,
                 penthouse: parseInt(document.getElementById('targetPH').value) || 0
             };
             
             // Update total percentage display
             const total = state.targetUnitMix.studio + state.targetUnitMix.oneBR + 
-                         state.targetUnitMix.twoBR + state.targetUnitMix.penthouse;
+                         state.targetUnitMix.twoBR + state.targetUnitMix.threeBR + state.targetUnitMix.penthouse;
             const totalEl = document.getElementById('mixTotalPercent');
             totalEl.textContent = total + '%';
             totalEl.classList.remove('warning', 'error');
@@ -2865,26 +2943,28 @@
         
         // Calculate default unit counts for a single floor based on RSF and target mix
         function calculateDefaultUnitCounts(rsf, isPenthouse = false) {
-            if (rsf <= 0) return { studio: 0, oneBR: 0, twoBR: 0, penthouse: 0 };
+            if (rsf <= 0) return { studio: 0, oneBR: 0, twoBR: 0, threeBR: 0, penthouse: 0 };
             
             // For penthouse floors, all units are PH
             if (isPenthouse) {
                 const totalUnits = Math.round(rsf / (state.useGranularSizes ? state.unitSizes.penthouse : state.avgUnitSize));
-                return { studio: 0, oneBR: 0, twoBR: 0, penthouse: totalUnits };
+                return { studio: 0, oneBR: 0, twoBR: 0, threeBR: 0, penthouse: totalUnits };
             }
             
-            let units = { studio: 0, oneBR: 0, twoBR: 0, penthouse: 0 };
+            let units = { studio: 0, oneBR: 0, twoBR: 0, threeBR: 0, penthouse: 0 };
             
             if (state.useGranularSizes) {
                 // Calculate units per type based on RSF allocation and type-specific sizes
                 const studioRSF = rsf * (state.targetUnitMix.studio / 100);
                 const oneBRRSF = rsf * (state.targetUnitMix.oneBR / 100);
                 const twoBRRSF = rsf * (state.targetUnitMix.twoBR / 100);
+                const threeBRRSF = rsf * (state.targetUnitMix.threeBR / 100);
                 const penthouseRSF = rsf * (state.targetUnitMix.penthouse / 100);
                 
                 units.studio = Math.round(studioRSF / state.unitSizes.studio);
                 units.oneBR = Math.round(oneBRRSF / state.unitSizes.oneBR);
                 units.twoBR = Math.round(twoBRRSF / state.unitSizes.twoBR);
+                units.threeBR = Math.round(threeBRRSF / state.unitSizes.threeBR);
                 units.penthouse = Math.round(penthouseRSF / state.unitSizes.penthouse);
             } else {
                 // Use average unit size for total, then distribute by percentage
@@ -2892,6 +2972,7 @@
                 units.studio = Math.round(totalUnits * (state.targetUnitMix.studio / 100));
                 units.oneBR = Math.round(totalUnits * (state.targetUnitMix.oneBR / 100));
                 units.twoBR = Math.round(totalUnits * (state.targetUnitMix.twoBR / 100));
+                units.threeBR = Math.round(totalUnits * (state.targetUnitMix.threeBR / 100));
                 units.penthouse = Math.round(totalUnits * (state.targetUnitMix.penthouse / 100));
             }
             
@@ -3039,8 +3120,8 @@
 
         function getDefaultFloorTypes() {
             return [
-                { name: 'Below Grade Parking - Van Accessible', use: 'Parking', startFloor: 'B01', endFloor: 'B01', gsf: 10000, height: "11' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
-                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B02', endFloor: 'B02', gsf: 10000, height: "10' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Below Grade Parking - Van Accessible', use: 'Parking', startFloor: 'B02', endFloor: 'B02', gsf: 10000, height: "11' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
+                { name: 'Below Grade Parking', use: 'Parking', startFloor: 'B01', endFloor: 'B01', gsf: 10000, height: "10' 0\"", countsInGSF: false, expanded: false, additionalUses: getDefaultAdditionalUses() },
                 { name: 'Ground Level', use: 'Retail', startFloor: 'G', endFloor: 'G', gsf: 10000, height: "18' 0\"", countsInGSF: true, expanded: false, additionalUses: getDefaultAdditionalUses() },
                 { name: 'P02 - Van Accessible', use: 'Parking', startFloor: 'P02', endFloor: 'P02', gsf: 10000, height: "11' 0\"", countsInGSF: false, expanded: false, isPLevel: true, additionalUses: getDefaultAdditionalUses() },
                 { name: 'Above Grade Parking', use: 'Parking', startFloor: 'P03', endFloor: 'P03', gsf: 10000, height: "9' 8\"", countsInGSF: false, expanded: false, isPLevel: true, additionalUses: getDefaultAdditionalUses() },
@@ -3119,11 +3200,11 @@
             worksheet.addRow([]);
             
             // New column order: 
-            // A: Height | B: Floor | C: Constr GSF | [D-F Grouped: Resi | Amenity | Mech] | G: Retail | H: GSF | I: Eff | J: RSF | K: Units | L: S | M: 1BR | N: 2BR | O: PH | P: Pkg SF | Q: Calc Cars | R: Actual Cars
+            // A: Height | B: Floor | C: Constr GSF | [D-F Grouped: Resi | Amenity | Mech] | G: Retail | H: GSF | I: Eff | J: RSF | K: Units | L: S | M: 1BR | N: 2BR | O: 3BR | P: PH | Q: Pkg SF | R: Calc Cars | S: Actual Cars
             const headers = [
                 'Height', 'Floor', 'Construction GSF', 
                 'Residential', 'Amenity', 'BOH/Mechanical', 'Retail',
-                'GSF', 'Efficiency', 'RSF', 'Units', 'S', '1BR', '2BR', 'PH', 'Parking SF', 'Calc Cars', 'Actual Cars'
+                'GSF', 'Efficiency', 'RSF', 'Units', 'S', '1BR', '2BR', '3BR', 'PH', 'Parking SF', 'Calc Cars', 'Actual Cars'
             ];
             worksheet.getRow(6).values = headers;
             worksheet.getRow(6).eachCell((cell) => {
@@ -3147,10 +3228,11 @@
                 { width: 5 },   // L - S
                 { width: 5 },   // M - 1BR
                 { width: 5 },   // N - 2BR
-                { width: 5 },   // O - PH
-                { width: 10 },  // P - Parking SF
-                { width: 8 },   // Q - Calc Cars
-                { width: 10 }   // R - Actual Cars
+                { width: 5 },   // O - 3BR
+                { width: 5 },   // P - PH
+                { width: 10 },  // Q - Parking SF
+                { width: 8 },   // R - Calc Cars
+                { width: 10 }   // S - Actual Cars
             ];
             
             // Group columns D-F (Residential, Amenity, BOH/Mech) - collapsed by default
@@ -3239,7 +3321,7 @@
                 const parkingSF = sfByUse.Parking;
                 
                 // Get unit counts for this floor type (from user input)
-                let unitCounts = { studio: 0, oneBR: 0, twoBR: 0, penthouse: 0 };
+                let unitCounts = { studio: 0, oneBR: 0, twoBR: 0, threeBR: 0, penthouse: 0 };
                 if (ft && ft.use === 'Residential') {
                     unitCounts = getFloorTypeUnitCounts(ft);
                 }
@@ -3250,35 +3332,37 @@
                             unitCounts.studio += au.unitCounts.studio || 0;
                             unitCounts.oneBR += au.unitCounts.oneBR || 0;
                             unitCounts.twoBR += au.unitCounts.twoBR || 0;
+                            unitCounts.threeBR += au.unitCounts.threeBR || 0;
                             unitCounts.penthouse += au.unitCounts.penthouse || 0;
                         }
                     });
                 }
-                const totalUnits = unitCounts.studio + unitCounts.oneBR + unitCounts.twoBR + unitCounts.penthouse;
+                const totalUnits = unitCounts.studio + unitCounts.oneBR + unitCounts.twoBR + (unitCounts.threeBR || 0) + unitCounts.penthouse;
                 
                 const isBelowGrade = floor.label.toUpperCase().startsWith('B');
                 
                 // Add row - note new column positions
-                // A: Height | B: Floor | C: Constr GSF | D: Resi | E: Amenity | F: Mech | G: Retail | H: GSF | I: Eff | J: RSF | K: Units | L: S | M: 1BR | N: 2BR | O: PH | P: Pkg SF | Q: Calc Cars | R: Actual Cars
+                // A: Height | B: Floor | C: Constr GSF | D: Resi | E: Amenity | F: Mech | G: Retail | H: GSF | I: Eff | J: RSF | K: Units | L: S | M: 1BR | N: 2BR | O: 3BR | P: PH | Q: Pkg SF | R: Calc Cars | S: Actual Cars
                 const row = worksheet.addRow([
                     height,                              // A - Height
                     floor.label,                         // B - Floor
-                    constructionGSF,                     // C - Construction GSF
+                    constructionGSF,                     // C - Construction GSF (user input)
                     sfByUse.Residential || '',           // D - Residential (grouped)
                     sfByUse.Amenity || '',               // E - Amenity (grouped)
                     sfByUse.Mechanical || '',            // F - BOH/Mechanical (grouped)
                     sfByUse.Retail || '',                // G - Retail
-                    gsf || '',                           // H - GSF
+                    gsf || '',                           // H - GSF (user input)
                     resiGSF > 0 ? state.efficiency : '', // I - Efficiency
                     '',                                  // J - RSF (will be formula)
                     totalUnits > 0 ? totalUnits : '',    // K - Units (user input)
                     unitCounts.studio || '',             // L - S (user input)
                     unitCounts.oneBR || '',              // M - 1BR (user input)
                     unitCounts.twoBR || '',              // N - 2BR (user input)
-                    unitCounts.penthouse || '',          // O - PH (user input)
-                    parkingSF || '',                     // P - Parking SF
-                    '',                                  // Q - Calc Cars (will be formula)
-                    floor.actualCars || ''               // R - Actual Cars (user input)
+                    unitCounts.threeBR || '',            // O - 3BR (user input)
+                    unitCounts.penthouse || '',          // P - PH (user input)
+                    parkingSF || '',                     // Q - Parking SF
+                    '',                                  // R - Calc Cars (will be formula)
+                    floor.actualCars || ''               // S - Actual Cars (user input)
                 ]);
                 
                 // Set RSF formula: =IF(D{row}>0, ROUND(D{row}*I{row}, 0), 0)
@@ -3289,7 +3373,7 @@
                 // Set Calc Cars formula - references parking settings cells at bottom (will be updated after we know row numbers)
                 // For now, use placeholder that we'll update
                 if (parkingSF > 0) {
-                    row.getCell(17).value = { formula: `IF(P${rowNum}>0,FLOOR(P${rowNum}/$P$SFPERCAR,1),0)` };
+                    row.getCell(18).value = { formula: `IF(Q${rowNum}>0,FLOOR(Q${rowNum}/$Q$SFPERCAR,1),0)` };
                 }
                 
                 // Determine row color
@@ -3313,8 +3397,8 @@
                     if (needsWhiteText) {
                         cell.font = { color: { argb: 'FFFFFFFF' } };
                     }
-                    // User input cells get blue bold font (units and actual cars)
-                    if ([11, 12, 13, 14, 15, 18].includes(colNumber) && cell.value) {
+                    // User input cells get blue bold font (construction GSF, GSF, units, and actual cars)
+                    if ([3, 8, 11, 12, 13, 14, 15, 16, 19].includes(colNumber) && cell.value) {
                         cell.font = { ...cell.font, bold: true, color: { argb: needsWhiteText ? 'FF93C5FD' : 'FF2563EB' } };
                     }
                 });
@@ -3337,6 +3421,7 @@
                 row.getCell(16).numFmt = '#,##0';
                 row.getCell(17).numFmt = '#,##0';
                 row.getCell(18).numFmt = '#,##0';
+                row.getCell(19).numFmt = '#,##0';
                 
                 rowNum++;
             });
@@ -3362,10 +3447,11 @@
                 { formula: `SUM(L${firstDataRow}:L${lastDataRow})` },      // L - S
                 { formula: `SUM(M${firstDataRow}:M${lastDataRow})` },      // M - 1BR
                 { formula: `SUM(N${firstDataRow}:N${lastDataRow})` },      // N - 2BR
-                { formula: `SUM(O${firstDataRow}:O${lastDataRow})` },      // O - PH
-                { formula: `SUM(P${firstDataRow}:P${lastDataRow})` },      // P - Parking SF
-                { formula: `SUM(Q${firstDataRow}:Q${lastDataRow})` },      // Q - Calc Cars
-                { formula: `SUM(R${firstDataRow}:R${lastDataRow})` }       // R - Actual Cars
+                { formula: `SUM(O${firstDataRow}:O${lastDataRow})` },      // O - 3BR
+                { formula: `SUM(P${firstDataRow}:P${lastDataRow})` },      // P - PH
+                { formula: `SUM(Q${firstDataRow}:Q${lastDataRow})` },      // Q - Parking SF
+                { formula: `SUM(R${firstDataRow}:R${lastDataRow})` },      // R - Calc Cars
+                { formula: `SUM(S${firstDataRow}:S${lastDataRow})` }       // S - Actual Cars
             ]);
             
             totalsRow.eachCell((cell, colNumber) => {
@@ -3377,10 +3463,10 @@
                 if (colNumber === 8) cell.numFmt = '#,##0" GSF"';
                 if (colNumber === 10) cell.numFmt = '#,##0" RSF"';
                 if (colNumber === 11) cell.numFmt = '#,##0" units"';
-                if (colNumber >= 12 && colNumber <= 15) cell.numFmt = '#,##0';
-                if (colNumber === 16) cell.numFmt = '#,##0" SF"';
-                if (colNumber === 17) cell.numFmt = '#,##0" cars"';
+                if (colNumber >= 12 && colNumber <= 16) cell.numFmt = '#,##0';
+                if (colNumber === 17) cell.numFmt = '#,##0" SF"';
                 if (colNumber === 18) cell.numFmt = '#,##0" cars"';
+                if (colNumber === 19) cell.numFmt = '#,##0" cars"';
             });
             
             const totalsRowNum = rowNum;
@@ -3420,58 +3506,59 @@
             const totalFARAvailable = state.siteSF * state.allowedFAR;
             const deltaToFAR = totalGSFForSite - totalFARAvailable;
             
-            // Site Data Summary (left) and Parking Summary (right - under P, Q, R columns)
-            const siteHeader = worksheet.addRow(['', 'SITE DATA', '', '', '', '', '', '', '', '', '', '', '', '', '', 'PARKING SUMMARY']);
+            // Site Data Summary (left) and Parking Summary (right - under Q, R, S columns)
+            const siteHeader = worksheet.addRow(['', 'SITE DATA', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'PARKING SUMMARY']);
             siteHeader.getCell(2).font = { bold: true, size: 12 };
             siteHeader.getCell(2).alignment = { horizontal: 'left' };
-            siteHeader.getCell(16).font = { bold: true, size: 12 };
-            siteHeader.getCell(16).alignment = { horizontal: 'left' };
+            siteHeader.getCell(17).font = { bold: true, size: 12 };
+            siteHeader.getCell(17).alignment = { horizontal: 'left' };
             worksheet.mergeCells(`B${rowNum}:D${rowNum}`);
-            worksheet.mergeCells(`P${rowNum}:R${rowNum}`);
+            worksheet.mergeCells(`Q${rowNum}:S${rowNum}`);
             rowNum++;
             
             // Row 1: Site SF | Parking Provided
-            const row1 = worksheet.addRow(['', 'Site SF:', '', state.siteSF, '', '', '', '', '', '', '', '', '', '', '', 'Provided:', { formula: `IF(R${totalsRowNum}>0,R${totalsRowNum},Q${totalsRowNum})` }]);
+            const row1 = worksheet.addRow(['', 'Site SF:', '', state.siteSF, '', '', '', '', '', '', '', '', '', '', '', '', 'Provided:', { formula: `IF(S${totalsRowNum}>0,S${totalsRowNum},R${totalsRowNum})` }]);
             row1.getCell(2).alignment = { horizontal: 'left' };
             row1.getCell(4).numFmt = '#,##0" SF"';
             row1.getCell(4).font = userInputStyle.font;
             row1.getCell(4).alignment = { horizontal: 'left' };
-            row1.getCell(16).alignment = { horizontal: 'left' };
-            row1.getCell(17).numFmt = '#,##0" cars"';
             row1.getCell(17).alignment = { horizontal: 'left' };
+            row1.getCell(18).numFmt = '#,##0" cars"';
+            row1.getCell(18).alignment = { horizontal: 'left' };
             const providedRowNum = rowNum;
             rowNum++;
             
             // Row 2: Allowed FAR | Parking Required
+            // Beds formula: Studios(L)*1 + 1BR(M)*1 + 2BR(N)*2 + 3BR(O)*3 + PH(P)*3
             let requiredFormula = '';
             if (state.parkingMethod === 'beds') {
-                requiredFormula = `ROUND((L${totalsRowNum}+M${totalsRowNum}+N${totalsRowNum}*2+O${totalsRowNum}*3)*R$RATIO,0)`;
+                requiredFormula = `ROUND((L${totalsRowNum}+M${totalsRowNum}+N${totalsRowNum}*2+O${totalsRowNum}*3+P${totalsRowNum}*3)*R$RATIO,0)`;
             } else if (state.parkingMethod === 'units') {
                 requiredFormula = `ROUND(K${totalsRowNum}*R$RATIO,0)`;
             } else {
                 requiredFormula = `R$FIXED`;
             }
             
-            const row2 = worksheet.addRow(['', 'Allowed FAR:', '', state.allowedFAR, '', '', '', '', '', '', '', '', '', '', '', 'Required:', { formula: requiredFormula }]);
+            const row2 = worksheet.addRow(['', 'Allowed FAR:', '', state.allowedFAR, '', '', '', '', '', '', '', '', '', '', '', '', 'Required:', { formula: requiredFormula }]);
             row2.getCell(2).alignment = { horizontal: 'left' };
             row2.getCell(4).numFmt = '0.0';
             row2.getCell(4).font = userInputStyle.font;
             row2.getCell(4).alignment = { horizontal: 'left' };
-            row2.getCell(16).alignment = { horizontal: 'left' };
-            row2.getCell(17).numFmt = '#,##0" cars"';
             row2.getCell(17).alignment = { horizontal: 'left' };
+            row2.getCell(18).numFmt = '#,##0" cars"';
+            row2.getCell(18).alignment = { horizontal: 'left' };
             const requiredRowNum = rowNum;
             rowNum++;
             
             // Row 3: Total FAR Available | Surplus/Deficit
-            const row3 = worksheet.addRow(['', 'Total FAR Available:', '', { formula: `D${providedRowNum}*D${requiredRowNum}` }, '', '', '', '', '', '', '', '', '', '', '', 'Surplus/(Deficit):', { formula: `Q${providedRowNum}-Q${requiredRowNum}` }]);
+            const row3 = worksheet.addRow(['', 'Total FAR Available:', '', { formula: `D${providedRowNum}*D${requiredRowNum}` }, '', '', '', '', '', '', '', '', '', '', '', '', 'Surplus/(Deficit):', { formula: `R${providedRowNum}-R${requiredRowNum}` }]);
             row3.getCell(2).alignment = { horizontal: 'left' };
             row3.getCell(4).numFmt = '#,##0" SF"';
             row3.getCell(4).alignment = { horizontal: 'left' };
-            row3.getCell(16).alignment = { horizontal: 'left' };
-            row3.getCell(17).numFmt = '#,##0" cars"';
-            row3.getCell(17).font = { bold: true };
             row3.getCell(17).alignment = { horizontal: 'left' };
+            row3.getCell(18).numFmt = '#,##0" cars"';
+            row3.getCell(18).font = { bold: true };
+            row3.getCell(18).alignment = { horizontal: 'left' };
             rowNum++;
             
             // Row 4: Delta to FAR | (blank)
@@ -3487,53 +3574,54 @@
             rowNum++;
             
             // Parking Settings Section (editable cells that formulas reference)
-            const parkingSettingsHeader = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'PARKING SETTINGS']);
-            parkingSettingsHeader.getCell(16).font = { bold: true, size: 11 };
-            parkingSettingsHeader.getCell(16).alignment = { horizontal: 'left' };
-            worksheet.mergeCells(`P${rowNum}:R${rowNum}`);
+            const parkingSettingsHeader = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'PARKING SETTINGS']);
+            parkingSettingsHeader.getCell(17).font = { bold: true, size: 11 };
+            parkingSettingsHeader.getCell(17).alignment = { horizontal: 'left' };
+            worksheet.mergeCells(`Q${rowNum}:S${rowNum}`);
             rowNum++;
             
             // SF per Car
-            const sfPerCarRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'SF per Car:', state.sfPerCar]);
-            sfPerCarRow.getCell(16).alignment = { horizontal: 'left' };
-            sfPerCarRow.getCell(17).font = userInputStyle.font;
+            const sfPerCarRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'SF per Car:', state.sfPerCar]);
             sfPerCarRow.getCell(17).alignment = { horizontal: 'left' };
+            sfPerCarRow.getCell(18).font = userInputStyle.font;
+            sfPerCarRow.getCell(18).alignment = { horizontal: 'left' };
             const sfPerCarRowNum = rowNum;
             rowNum++;
             
             // Method label
-            const methodRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Method:', state.parkingMethod]);
-            methodRow.getCell(16).alignment = { horizontal: 'left' };
-            methodRow.getCell(17).font = userInputStyle.font;
+            const methodRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Method:', state.parkingMethod]);
             methodRow.getCell(17).alignment = { horizontal: 'left' };
+            methodRow.getCell(18).font = userInputStyle.font;
+            methodRow.getCell(18).alignment = { horizontal: 'left' };
             rowNum++;
             
             // Ratio / Fixed
             let ratioLabel = state.parkingMethod === 'fixed' ? 'Fixed Cars:' : 'Ratio:';
             let ratioValue = state.parkingMethod === 'fixed' ? state.fixedParking : state.parkingRatio;
-            const ratioRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ratioLabel, ratioValue]);
-            ratioRow.getCell(16).alignment = { horizontal: 'left' };
-            ratioRow.getCell(17).font = userInputStyle.font;
+            const ratioRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ratioLabel, ratioValue]);
             ratioRow.getCell(17).alignment = { horizontal: 'left' };
+            ratioRow.getCell(18).font = userInputStyle.font;
+            ratioRow.getCell(18).alignment = { horizontal: 'left' };
             const ratioRowNum = rowNum;
             rowNum++;
             
             // Now go back and update all the Calc Cars formulas to reference the SF per car cell
             for (let r = firstDataRow; r <= lastDataRow; r++) {
-                const cell = worksheet.getCell(`Q${r}`);
+                const cell = worksheet.getCell(`R${r}`);
                 if (cell.value && cell.value.formula) {
-                    cell.value = { formula: `IF(P${r}>0,FLOOR(P${r}/Q${sfPerCarRowNum},1),0)` };
+                    cell.value = { formula: `IF(Q${r}>0,FLOOR(Q${r}/R${sfPerCarRowNum},1),0)` };
                 }
             }
             
             // Update Required parking formula to reference ratio cell
-            const reqCell = worksheet.getCell(`Q${requiredRowNum}`);
+            // Beds formula: Studios(L)*1 + 1BR(M)*1 + 2BR(N)*2 + 3BR(O)*3 + PH(P)*3
+            const reqCell = worksheet.getCell(`R${requiredRowNum}`);
             if (state.parkingMethod === 'beds') {
-                reqCell.value = { formula: `ROUND((L${totalsRowNum}+M${totalsRowNum}+N${totalsRowNum}*2+O${totalsRowNum}*3)*Q${ratioRowNum},0)` };
+                reqCell.value = { formula: `ROUND((L${totalsRowNum}+M${totalsRowNum}+N${totalsRowNum}*2+O${totalsRowNum}*3+P${totalsRowNum}*3)*R${ratioRowNum},0)` };
             } else if (state.parkingMethod === 'units') {
-                reqCell.value = { formula: `ROUND(K${totalsRowNum}*Q${ratioRowNum},0)` };
+                reqCell.value = { formula: `ROUND(K${totalsRowNum}*R${ratioRowNum},0)` };
             } else {
-                reqCell.value = { formula: `Q${ratioRowNum}` };
+                reqCell.value = { formula: `R${ratioRowNum}` };
             }
             
             // Blank row
@@ -3560,28 +3648,39 @@
                 sizesLabelRow.getCell(2).alignment = { horizontal: 'left' };
                 rowNum++;
                 
-                const sizesRow = worksheet.addRow(['', '', 'Studio:', state.unitSizes.studio, '1BR:', state.unitSizes.oneBR, '2BR:', state.unitSizes.twoBR, 'PH:', state.unitSizes.penthouse]);
+                const sizesRow = worksheet.addRow(['', '', 'S:', state.unitSizes.studio, '1BR:', state.unitSizes.oneBR, '2BR:', state.unitSizes.twoBR, '3BR:', state.unitSizes.threeBR, 'PH:', state.unitSizes.penthouse]);
                 sizesRow.getCell(4).font = userInputStyle.font;
                 sizesRow.getCell(6).font = userInputStyle.font;
                 sizesRow.getCell(8).font = userInputStyle.font;
                 sizesRow.getCell(10).font = userInputStyle.font;
+                sizesRow.getCell(12).font = userInputStyle.font;
                 rowNum++;
             }
             
-            // Target mix as editable cells
-            const mixLabelRow = worksheet.addRow(['', 'Target Mix %:']);
+            // Target mix as editable cells with custom number format
+            const mixLabelRow = worksheet.addRow(['', 'Target Mix:']);
             mixLabelRow.getCell(2).alignment = { horizontal: 'left' };
             rowNum++;
             
-            const mixRow = worksheet.addRow(['', '', 'Studios:', state.targetUnitMix.studio, '1BR:', state.targetUnitMix.oneBR, '2BR:', state.targetUnitMix.twoBR, 'PH:', state.targetUnitMix.penthouse]);
+            const mixRow = worksheet.addRow(['', '', state.targetUnitMix.studio, state.targetUnitMix.oneBR, state.targetUnitMix.twoBR, state.targetUnitMix.threeBR, state.targetUnitMix.penthouse]);
+            mixRow.getCell(3).font = userInputStyle.font;
+            mixRow.getCell(3).numFmt = '"S " 0"%"';
             mixRow.getCell(4).font = userInputStyle.font;
-            mixRow.getCell(4).numFmt = '0"%"';
+            mixRow.getCell(4).numFmt = '"1BR " 0"%"';
+            mixRow.getCell(5).font = userInputStyle.font;
+            mixRow.getCell(5).numFmt = '"2BR " 0"%"';
             mixRow.getCell(6).font = userInputStyle.font;
-            mixRow.getCell(6).numFmt = '0"%"';
-            mixRow.getCell(8).font = userInputStyle.font;
-            mixRow.getCell(8).numFmt = '0"%"';
-            mixRow.getCell(10).font = userInputStyle.font;
-            mixRow.getCell(10).numFmt = '0"%"';
+            mixRow.getCell(6).numFmt = '"3BR " 0"%"';
+            mixRow.getCell(7).font = userInputStyle.font;
+            mixRow.getCell(7).numFmt = '"PH " 0"%"';
+            rowNum++;
+            
+            // Total Beds calculation
+            // Beds = Studios(L)*1 + 1BR(M)*1 + 2BR(N)*2 + 3BR(O)*3 + PH(P)*3
+            const bedsRow = worksheet.addRow(['', 'Total Beds:', { formula: `L${totalsRowNum}+M${totalsRowNum}+N${totalsRowNum}*2+O${totalsRowNum}*3+P${totalsRowNum}*3` }]);
+            bedsRow.getCell(2).alignment = { horizontal: 'left' };
+            bedsRow.getCell(3).numFmt = '#,##0" beds"';
+            bedsRow.getCell(3).font = { bold: true };
             
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -3612,6 +3711,41 @@
         }
 
         // ============================================
+        // SIDEBAR RESIZE
+        // ============================================
+        
+        function initSidebarResize() {
+            const sidebar = document.getElementById('sidebar');
+            const handle = document.getElementById('sidebarResizeHandle');
+            let isResizing = false;
+            
+            handle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                handle.classList.add('dragging');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const newWidth = e.clientX;
+                sidebar.style.width = newWidth + 'px';
+                // Update grid template
+                document.querySelector('.main-container').style.gridTemplateColumns = newWidth + 'px 1fr';
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    handle.classList.remove('dragging');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                }
+            });
+        }
+
+        // ============================================
         // INITIALIZATION
         // ============================================
 
@@ -3619,6 +3753,7 @@
             state.floorTypes = getDefaultFloorTypes();
             autoRenumberFloors();
             initializeUnitCounts();
+            initSidebarResize();
             renderFloorTypes();
             updatePreview();
         }
